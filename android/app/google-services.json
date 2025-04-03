@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1078808067825",
+    "project_id": "bitelq-77d9b",
+    "storage_bucket": "bitelq-77d9b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1078808067825:android:05f71a3efae50c988ab350",
+        "android_client_info": {
+          "package_name": "com.example.biteq"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnwXzhuNcO4-QChqB7HmN11xS8Coba69s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
