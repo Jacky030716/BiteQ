@@ -1,42 +1,52 @@
 import 'package:biteq/core/theme/_app.Palette.dart';
+import 'package:biteq/features/survey_form/presentation/viewmodel/survey_view_model.dart';
 import 'package:flutter/material.dart';
 
 class SurveyTextInput extends StatelessWidget {
-  final TextEditingController inputController;
-  final Map<String, dynamic> currentQuestion;
-
   const SurveyTextInput({
     super.key,
-    required this.inputController,
+    required this.viewModel,
     required this.currentQuestion,
   });
 
+  final SurveyViewModel viewModel;
+  final Map<String, dynamic> currentQuestion;
+
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 50,
-      child: TextField(
-        controller: inputController,
-        decoration: InputDecoration(
-          hintText: currentQuestion['placeholder'],
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 15,
-            horizontal: 20,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10.0),
-            borderSide: BorderSide(color: Palette.placeholder),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10.0),
-            borderSide: BorderSide(color: Palette.primary, width: 2),
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10.0),
-            borderSide: BorderSide(color: Palette.primary),
-          ),
+    // Convert string keyboard type to actual TextInputType
+    TextInputType getKeyboardType(String? type) {
+      switch (type) {
+        case 'text':
+          return TextInputType.text;
+        case 'number':
+          return TextInputType.number;
+        case 'phone':
+          return TextInputType.phone;
+        case 'email':
+          return TextInputType.emailAddress;
+        case 'multiline':
+          return TextInputType.multiline;
+        case 'url':
+          return TextInputType.url;
+        default:
+          return TextInputType.text;
+      }
+    }
+
+    return TextField(
+      controller: viewModel.inputController,
+      keyboardType: getKeyboardType(currentQuestion['keyboardType'] as String?),
+      decoration: InputDecoration(
+        hintText: currentQuestion['hintText'],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: BorderSide(color: Palette.placeholder),
         ),
-        keyboardType: TextInputType.number, // For numeric input
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: BorderSide(color: Palette.primary),
+        ),
       ),
     );
   }

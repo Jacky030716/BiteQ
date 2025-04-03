@@ -1,6 +1,7 @@
 import 'package:biteq/core/theme/_app.Palette.dart';
 import 'package:biteq/features/survey_form/data/questions.dart';
 import 'package:biteq/features/survey_form/presentation/viewmodel/survey_view_model.dart';
+import 'package:biteq/features/survey_form/presentation/widgets/scrollable_input.dart';
 import 'package:biteq/features/survey_form/presentation/widgets/survey_text_input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,9 +47,19 @@ class SurveyQuestions extends ConsumerWidget {
         // Render Options or Input Field
         if (currentQuestion['type'] == 'options')
           _buildOptionsQuestion(context, ref, currentQuestion)
+        else if (currentQuestion['type'] == 'scrollable_input')
+          SurveyScrollableInput(
+            key: Key(currentQuestion['question']),
+            inputController: viewModel.inputController,
+            currentQuestion: currentQuestion,
+            minValue: currentQuestion['minValue'] ?? 0,
+            maxValue: currentQuestion['maxValue'] ?? 100,
+            defaultValue: currentQuestion['defaultValue'] ?? 0,
+            unit: currentQuestion['unit'] ?? '',
+          )
         else if (currentQuestion['type'] == 'input')
           SurveyTextInput(
-            inputController: viewModel.inputController,
+            viewModel: viewModel,
             currentQuestion: currentQuestion,
           ),
 
@@ -77,7 +88,7 @@ class SurveyQuestions extends ConsumerWidget {
                 state.isSubmitting
                     ? const CircularProgressIndicator(color: Colors.white)
                     : Text(
-                      viewModel.isLastQuestion ? 'Submit' : 'Next',
+                      viewModel.isLastQuestion ? 'Submit' : 'Continue',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -98,10 +109,24 @@ class SurveyQuestions extends ConsumerWidget {
     final viewModel = ref.watch(surveyViewModelProvider.notifier);
     final state = ref.watch(surveyViewModelProvider);
 
+    // Restore the selected option if it exists
+    int storedOptionIndex;
+    final currentResponse = state.responses[state.currentQuestionIndex];
+
+    if (currentResponse != null && currentResponse.isNotEmpty) {
+      storedOptionIndex = currentQuestion['options'].indexOf(currentResponse);
+
+      if (storedOptionIndex != -1 && state.selectedOption == null) {
+        Future.microtask(() {
+          viewModel.selectOption(storedOptionIndex);
+        });
+      }
+    }
+
     return Column(
       children: List.generate(currentQuestion['options'].length, (index) {
         return GestureDetector(
-          onTap: () => viewModel.selectOption(index),
+          onTap: () => {viewModel.selectOption(index)},
           child: Container(
             width: double.infinity,
             margin: const EdgeInsets.symmetric(vertical: 8.0),

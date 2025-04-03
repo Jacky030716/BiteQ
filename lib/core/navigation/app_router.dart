@@ -8,7 +8,7 @@ import 'package:biteq/features/auth/presentation/pages/forgot_password_screen.da
 import 'package:biteq/features/auth/presentation/pages/sign_in_screen.dart';
 import 'package:biteq/features/auth/presentation/pages/sign_up_screen.dart';
 import 'package:biteq/features/onboarding/presentation/pages/onboarding_page.dart';
-import 'package:biteq/features/survey_form/domain/repositories/survey_repositories.dart';
+import 'package:biteq/features/survey_form/data/repositories/survey_repositories.dart';
 import 'package:biteq/features/survey_form/presentation/pages/survey_page.dart';
 
 import 'package:flutter/material.dart';
@@ -47,7 +47,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final redirectService = ref.read(redirectServiceProvider);
 
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: '/survey',
     redirect: (context, state) async {
       return await redirectService.handleRedirect(
         authState,

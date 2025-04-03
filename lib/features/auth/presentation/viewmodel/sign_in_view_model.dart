@@ -1,6 +1,6 @@
 import 'package:biteq/core/navigation/app_router.dart';
 import 'package:biteq/features/auth/domain/usecases/sign_in_usecase.dart';
-import 'package:biteq/features/survey_form/domain/repositories/survey_repositories.dart';
+import 'package:biteq/features/survey_form/data/repositories/survey_repositories.dart';
 import 'package:biteq/features/survey_form/domain/usecase/survey_usecase.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

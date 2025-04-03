@@ -1,5 +1,5 @@
 import 'package:biteq/features/survey_form/data/models/user_survey.dart';
-import 'package:biteq/features/survey_form/domain/repositories/survey_repositories.dart';
+import 'package:biteq/features/survey_form/data/repositories/survey_repositories.dart';
 
 class SurveyUsecase {
   final SurveyRepositories repository;

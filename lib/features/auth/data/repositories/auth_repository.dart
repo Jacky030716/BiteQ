@@ -13,8 +13,8 @@ class AuthRepository {
   static const String _userPasswordKey = 'user_password';
   static const String _onboardingDisplayedKey = 'onboarding_displayed';
 
-  // Session timeout duration (30 minutes in milliseconds)
-  static const int _sessionTimeout = 30 * 60 * 1000;
+  // Session timeout duration (3 hours)
+  static const int _sessionTimeout = 3 * 60 * 60 * 1000;
 
   // Check if onboarding has been displayed
   Future<bool> hasDisplayedOnboarding() async {

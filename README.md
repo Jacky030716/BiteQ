@@ -147,13 +147,8 @@ lib/
 1. Ensure Flutter is installed and set up
 2. Clone the repository
 3. Run `flutter pub get` to install dependencies
-4. Configure Firebase:
-   - Install Firebase CLI: `npm install -g firebase-tools`
-   - Login to Firebase: `firebase login`
-   - Initialize Firebase: `firebase init`
-   - Setup FlutterFire: `dart pub global activate flutterfire_cli && flutterfire configure`
-5. Enable Firebase Authentication in the Firebase Console
-6. Run the app with `flutter run`
+4. Enable Firebase Authentication in the Firebase Console
+5. Run the app with `flutter run`
 
 ## Development Guidelines
 

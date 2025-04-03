@@ -1,6 +1,6 @@
 import 'package:biteq/features/auth/data/models/user_model.dart';
 import 'package:biteq/features/auth/data/repositories/auth_repository.dart';
-import 'package:biteq/features/survey_form/domain/repositories/survey_repositories.dart';
+import 'package:biteq/features/survey_form/data/repositories/survey_repositories.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class RedirectService {
@@ -50,8 +50,7 @@ class RedirectService {
       return '/home';
     }
 
-    // Redirect authenticated users
-    if (isLoggedIn && matchedLocation == '/home') {
+    if (isLoggedIn) {
       final isSurveyCompleted = await surveyRepositories.getSurveyStatus(
         authState.value!.email,
       );
@@ -63,6 +62,6 @@ class RedirectService {
       }
     }
 
-    return null; // Default to no redirect
+    return null;
   }
 }

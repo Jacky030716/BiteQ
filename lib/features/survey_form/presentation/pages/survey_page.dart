@@ -27,10 +27,8 @@ class SurveyPage extends ConsumerWidget {
     final viewModel = ref.read(surveyViewModelProvider.notifier);
 
     if (viewModel.isFirstQuestion) {
-      // If on first question, navigate to sign-in
       context.go('/sign-in');
     } else {
-      // Otherwise go to previous question
       viewModel.moveToPreviousQuestion();
     }
   }
