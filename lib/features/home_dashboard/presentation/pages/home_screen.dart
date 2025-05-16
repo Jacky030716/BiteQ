@@ -58,26 +58,55 @@ class HomeScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Today • Yesterday text moved before "Consumed 1288 Calories"
             const Text(
               'Today • Yesterday',
               style: TextStyle(fontSize: 14, color: Colors.grey),
             ),
             const SizedBox(height: 8),
 
-            // Header for the calorie info
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Consumed 1288 Calories',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.pie_chart),
-                  onPressed: () {},
-                ),
-              ],
+            // Updated header for the calorie info with larger text and pie chart
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        'Consumed',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '1288 Calories',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.pie_chart,
+                      size: 40,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      // Pie chart action
+                    },
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 20),
 
@@ -149,11 +178,17 @@ class _NutrientInfo extends StatelessWidget {
             description,
             style: const TextStyle(fontSize: 14, color: Colors.grey),
           ),
+          const SizedBox(height: 8), // Adding space between the description and "Consumed"
+          const Text(
+            'Consumed',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
         ],
       ),
     );
   }
 }
+
 
 class _ScannedItem extends StatelessWidget {
   final String foodName;
