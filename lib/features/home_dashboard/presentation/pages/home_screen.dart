@@ -24,6 +24,8 @@ class HomeScreen extends ConsumerWidget {
               },
               child: Text('Sign Out'),
             ),
+            SizedBox(height: 20),
+            NavigateButton(route: '/explore', text: 'Explore'),
           ],
         ),
       ),
