@@ -18,6 +18,7 @@ class HomeScreen extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             NavigateButton(route: '/sign-up', text: 'Go to Sign Up'),
+            NavigateButton(route: '/explore', text: 'Explore'),
             ElevatedButton(
               onPressed: () {
                 signOutViewModel.signOut(() => context.go('/sign-in'), ref);
@@ -25,7 +26,6 @@ class HomeScreen extends ConsumerWidget {
               child: Text('Sign Out'),
             ),
             SizedBox(height: 20),
-            NavigateButton(route: '/explore', text: 'Explore'),
           ],
         ),
       ),

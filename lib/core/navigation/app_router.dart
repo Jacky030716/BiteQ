@@ -11,6 +11,9 @@ import 'package:biteq/features/onboarding/presentation/pages/onboarding_page.dar
 import 'package:biteq/features/survey_form/data/repositories/survey_repositories.dart';
 import 'package:biteq/features/survey_form/presentation/pages/survey_page.dart';
 
+import 'package:biteq/features/posting/explore_page.dart';
+import 'package:biteq/features/posting/create_post_page.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -78,6 +81,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           return const SurveyPage(); // Replace with your survey screen
         },
+      ),
+      GoRoute(
+        path: '/explore',
+        builder: (context, state) => const ExplorePage(),
+      ),
+      GoRoute(
+        path: '/create-post',
+        builder: (context, state) => const CreatePostPage(),
       ),
     ],
     errorBuilder:

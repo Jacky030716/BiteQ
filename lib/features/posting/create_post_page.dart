@@ -3,19 +3,30 @@ import 'post_controller.dart';
 import 'post_model.dart';
 
 class CreatePostPage extends StatefulWidget {
-  final MyHomeController controller;
-
-  const CreatePostPage({super.key, required this.controller});
+  const CreatePostPage({super.key});
 
   @override
   State<CreatePostPage> createState() => _CreatePostPageState();
 }
 
 class _CreatePostPageState extends State<CreatePostPage> {
-  final titleController = TextEditingController();
-  final authorController = TextEditingController();
-  final imageUrlController = TextEditingController();
-  final descriptionController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _imageUrlController = TextEditingController();
+  final _authorController = TextEditingController();
+  final _descriptionController = TextEditingController();
+
+  void _submit() {
+    if (_formKey.currentState!.validate()) {
+      // You would dispatch to a provider or controller here
+      print("Post Created:");
+      print(_titleController.text);
+      print(_imageUrlController.text);
+      print(_authorController.text);
+      print(_descriptionController.text);
+      Navigator.pop(context); // Go back to explore
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,39 +34,38 @@ class _CreatePostPageState extends State<CreatePostPage> {
       appBar: AppBar(title: const Text('Create Post')),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(labelText: 'Title'),
-            ),
-            TextField(
-              controller: authorController,
-              decoration: const InputDecoration(labelText: 'Author'),
-            ),
-            TextField(
-              controller: imageUrlController,
-              decoration: const InputDecoration(labelText: 'Image URL'),
-            ),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(labelText: 'Description'),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                final post = Post(
-                  title: titleController.text,
-                  author: authorController.text,
-                  imageUrl: imageUrlController.text,
-                  description: descriptionController.text,
-                );
-                widget.controller.addPost(post);
-                Navigator.pop(context);
-              },
-              child: const Text('Add Post'),
-            ),
-          ],
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(labelText: 'Title'),
+                validator: (val) => val!.isEmpty ? 'Required' : null,
+              ),
+              TextFormField(
+                controller: _authorController,
+                decoration: const InputDecoration(labelText: 'Author'),
+                validator: (val) => val!.isEmpty ? 'Required' : null,
+              ),
+              TextFormField(
+                controller: _imageUrlController,
+                decoration: const InputDecoration(labelText: 'Image URL'),
+                validator: (val) => val!.isEmpty ? 'Required' : null,
+              ),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(labelText: 'Description'),
+                maxLines: 5,
+                validator: (val) => val!.isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _submit,
+                child: const Text('Create Post'),
+              ),
+            ],
+          ),
         ),
       ),
     );

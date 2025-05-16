@@ -1,11 +1,26 @@
 import 'package:flutter/material.dart';
-import 'post_controller.dart';
+import 'package:go_router/go_router.dart';
+import 'post_model.dart';
 import 'post_detail_page.dart';
 
-class ExplorePage extends StatelessWidget {
-  final MyHomeController controller;
+class ExplorePage extends StatefulWidget {
+  const ExplorePage({super.key});
 
-  const ExplorePage({super.key, required this.controller});
+  @override
+  State<ExplorePage> createState() => _ExplorePageState();
+}
+
+class _ExplorePageState extends State<ExplorePage> {
+  final List<Post> _posts = [
+    Post(
+      title: 'Mediterranean Pasta',
+      imageUrl:
+          'https://cdn77-s3.lazycatkitchen.com/wp-content/uploads/2021/10/roasted-tomato-sauce-portion-800x1200.jpg',
+      author: 'Dr. John',
+      description: 'Healthy Mediterranean diet pasta with vegetables.',
+    ),
+    // Add more sample posts if needed
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -14,44 +29,62 @@ class ExplorePage extends StatelessWidget {
         title: const Text('Explore'),
         actions: [
           IconButton(
-            onPressed: () => Navigator.pushNamed(context, '/createPost'),
             icon: const Icon(Icons.add),
+            onPressed: () {
+              context.push('/create-post');
+            },
           ),
         ],
       ),
-      body: GridView.builder(
+      body: Padding(
         padding: const EdgeInsets.all(12),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1,
+        child: GridView.builder(
+          itemCount: _posts.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.9,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+          ),
+          itemBuilder: (context, index) {
+            final post = _posts[index];
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => PostDetailPage(post: post)),
+                );
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        post.imageUrl,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    post.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    'by ${post.author}',
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
-        itemCount: controller.posts.length,
-        itemBuilder: (context, index) {
-          final post = controller.posts[index];
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => PostDetailPage(post: post)),
-              );
-            },
-            child: Column(
-              children: [
-                Expanded(
-                  child: Image.network(post.imageUrl, fit: BoxFit.cover),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  post.title,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text('by ${post.author}', style: const TextStyle(fontSize: 12)),
-              ],
-            ),
-          );
-        },
       ),
     );
   }
