@@ -239,8 +239,8 @@ class _ScannedItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             child: Image.asset(
               'assets/images/chicken_bolognese.jpg', // Ensure the image is in your assets folder
-              width: 80,
-              height: 80,
+              width: 50,
+              height: 50,
               fit: BoxFit.cover,
             ),
           ),
@@ -320,7 +320,7 @@ class DetailPage extends StatelessWidget {
             Image.asset(
               'assets/images/chicken_bolognese.jpg',
               width: double.infinity,
-              height: 200,
+              height: 300,
               fit: BoxFit.cover,
             ),
             const SizedBox(height: 20),
