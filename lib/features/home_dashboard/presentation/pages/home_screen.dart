@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:biteq/features/auth/presentation/viewmodel/sign_out_view_model.dart';
 import 'package:go_router/go_router.dart';
+import 'package:percent_indicator/percent_indicator.dart';
+import 'package:pie_chart/pie_chart.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -98,7 +100,10 @@ class HomeScreen extends ConsumerWidget {
                       color: Colors.grey,
                     ),
                     onPressed: () {
-                      // Pie chart action
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const PieChartScreen()),
+                      );
                     },
                   ),
                 ],
@@ -106,11 +111,13 @@ class HomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: const [
-                _NutrientInfo(label: '32g', description: 'Protein'),
-                _NutrientInfo(label: '50g', description: 'Carbohydrate'),
-                _NutrientInfo(label: '60g', description: 'Fats'),
+                _NutrientCircularChart(
+                    label: 'Protein', currentValue: 32, goalValue: 40, color: Colors.orange),
+                _NutrientCircularChart(
+                    label: 'Carbohydrate', currentValue: 50, goalValue: 225, color: Colors.yellow),
+                _NutrientCircularChart(label: 'Fats', currentValue: 60, goalValue: 78, color: Colors.green),
               ],
             ),
             const SizedBox(height: 20),
@@ -141,41 +148,50 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _NutrientInfo extends StatelessWidget {
-  final String label;
-  final String description;
+class _NutrientCircularChart extends StatelessWidget {
+  final String label; // eg 'Protein'
+  final int currentValue; // eg 32
+  final int goalValue; // eg 40
+  final Color color;
 
-  const _NutrientInfo({required this.label, required this.description});
+  const _NutrientCircularChart({
+    required this.label,
+    required this.currentValue,
+    required this.goalValue,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: MediaQuery.of(context).size.width * 0.27,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
+    final double percent = (currentValue / goalValue).clamp(0, 1);
+
+    return CircularPercentIndicator(
+      radius: 60,
+      lineWidth: 8,
+      percent: percent,
+      center: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            label,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            '$currentValue${label == 'Protein' ? 'g' : ''}',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 8),
           Text(
-            description,
+            label,
             style: const TextStyle(fontSize: 14, color: Colors.grey),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           const Text(
             'Consumed',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ],
       ),
+      progressColor: color,
+      backgroundColor: Colors.grey[300]!,
+      circularStrokeCap: CircularStrokeCap.round,
+      animation: true,
+      animationDuration: 1000,
     );
   }
 }
@@ -343,15 +359,65 @@ class NavigateButton extends StatelessWidget {
         context.go(route); // Use GoRouter to navigate
       },
       style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        backgroundColor: Colors.blue,
+        backgroundColor: const Color.fromARGB(255, 99, 97, 97),
       ),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 16, color: Colors.white),
+      child: Text(text),
+    );
+  }
+}
+
+class PieChartScreen extends StatelessWidget {
+  const PieChartScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final proteinGrams = 32;
+    final carbGrams = 50;
+    final fatGrams = 60;
+
+    // Calculate calories
+    final proteinCalories = proteinGrams * 4;
+    final carbCalories = carbGrams * 4;
+    final fatCalories = fatGrams * 9;
+
+    final dataMap = <String, double>{
+      "Protein": proteinCalories.toDouble(),
+      "Carbohydrate": carbCalories.toDouble(),
+      "Fats": fatCalories.toDouble(),
+    };
+
+    final colorList = <Color>[
+      Colors.orange,
+      Colors.yellow,
+      Colors.green,
+    ];
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Calorie Breakdown Pie Chart'),
+      ),
+      body: Center(
+        child: PieChart(
+          dataMap: dataMap,
+          animationDuration: const Duration(milliseconds: 800),
+          chartRadius: MediaQuery.of(context).size.width / 1.5,
+          colorList: colorList,
+          chartType: ChartType.disc,
+          ringStrokeWidth: 32,
+          centerText: "Calories",
+          legendOptions: const LegendOptions(
+            showLegendsInRow: false,
+            legendPosition: LegendPosition.right,
+            showLegends: true,
+            legendShape: BoxShape.circle,
+            legendTextStyle: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          chartValuesOptions: const ChartValuesOptions(
+            showChartValuesInPercentage: true,
+            decimalPlaces: 1,
+            showChartValuesOutside: false,
+          ),
+        ),
       ),
     );
   }
