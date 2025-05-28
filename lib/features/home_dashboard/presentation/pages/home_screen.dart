@@ -4,7 +4,7 @@ import 'package:biteq/features/auth/presentation/viewmodel/sign_out_view_model.d
 import 'package:go_router/go_router.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: const HomeScreen(),
-      debugShowCheckedModeBanner: false, // Disable debug banner
+      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -30,11 +30,10 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Row(
           children: [
-            // Display the logo image
             Image.asset(
               'assets/images/logo.png',
-              height: 40, // Adjust the height of the logo
-              width: 40, // Adjust the width of the logo
+              height: 40,
+              width: 40,
               fit: BoxFit.cover,
             ),
             const SizedBox(width: 10),
@@ -43,7 +42,6 @@ class HomeScreen extends ConsumerWidget {
         ),
         backgroundColor: const Color.fromARGB(255, 172, 170, 170),
         actions: [
-          // Sign out button in the top-right corner
           IconButton(
             icon: const Icon(Icons.exit_to_app),
             onPressed: () {
@@ -52,7 +50,7 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      backgroundColor: Colors.white, // Set the background color to white
+      backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -63,8 +61,6 @@ class HomeScreen extends ConsumerWidget {
               style: TextStyle(fontSize: 14, color: Colors.grey),
             ),
             const SizedBox(height: 8),
-
-            // Updated header for the calorie info with larger text and pie chart
             Container(
               padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
               decoration: BoxDecoration(
@@ -109,8 +105,6 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Nutrients Summary (Protein, Carbs, Fats)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: const [
@@ -119,18 +113,15 @@ class HomeScreen extends ConsumerWidget {
                 _NutrientInfo(label: '60g', description: 'Fats'),
               ],
             ),
-            const SizedBox(height: 20), // Add a break between the rows
-
-            // Recently Scanned Section
+            const SizedBox(height: 20),
             const Text(
               'Recently Scanned',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            // List of scanned items
             Expanded(
               child: ListView.builder(
-                itemCount: 4,  // Update based on the actual number of scans
+                itemCount: 4,
                 itemBuilder: (context, index) {
                   return _ScannedItem(
                     foodName: 'Chicken Bolognese',
@@ -159,10 +150,10 @@ class _NutrientInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: MediaQuery.of(context).size.width * 0.27,  // Adjust width to 1/3 of the screen width (for equal boxes)
+      width: MediaQuery.of(context).size.width * 0.27,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[200], // Light grey background
+        color: Colors.grey[200],
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -178,7 +169,7 @@ class _NutrientInfo extends StatelessWidget {
             description,
             style: const TextStyle(fontSize: 14, color: Colors.grey),
           ),
-          const SizedBox(height: 8), // Adding space between the description and "Consumed"
+          const SizedBox(height: 8),
           const Text(
             'Consumed',
             style: TextStyle(fontSize: 12, color: Colors.grey),
@@ -188,7 +179,6 @@ class _NutrientInfo extends StatelessWidget {
     );
   }
 }
-
 
 class _ScannedItem extends StatelessWidget {
   final String foodName;
@@ -211,7 +201,6 @@ class _ScannedItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // Navigate to the detail page when tapped
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -228,17 +217,17 @@ class _ScannedItem extends StatelessWidget {
       },
       child: Card(
         margin: const EdgeInsets.only(bottom: 10),
-        color: Colors.grey[50], // Light background for each item
+        color: Colors.grey[50],
         elevation: 4,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15), // Rounded corners for the card
+          borderRadius: BorderRadius.circular(15),
         ),
         child: ListTile(
           contentPadding: const EdgeInsets.all(10),
           leading: ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: Image.asset(
-              'assets/images/chicken_bolognese.jpg', // Ensure the image is in your assets folder
+              'assets/images/chicken_bolognese.jpg',
               width: 50,
               height: 50,
               fit: BoxFit.cover,
@@ -251,25 +240,20 @@ class _ScannedItem extends StatelessWidget {
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Row for calories, protein, carbs, fats in a single row
               Row(
                 children: [
-                  // Fire icon for calories
                   Icon(Icons.local_fire_department, size: 16, color: Colors.red),
                   const SizedBox(width: 4),
                   Text(calories, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                   const SizedBox(width: 20),
-                  // Chicken icon for protein
                   Icon(Icons.pets, size: 16, color: Colors.orange),
                   const SizedBox(width: 4),
                   Text(protein, style: const TextStyle(fontSize: 14)),
                   const SizedBox(width: 20),
-                  // Wheat icon for carbs
                   Icon(Icons.local_pizza, size: 16, color: Colors.yellow),
                   const SizedBox(width: 4),
                   Text(carbs, style: const TextStyle(fontSize: 14)),
                   const SizedBox(width: 20),
-                  // Oil icon for fats
                   Icon(Icons.local_drink, size: 16, color: Colors.green),
                   const SizedBox(width: 4),
                   Text(fats, style: const TextStyle(fontSize: 14)),
@@ -316,7 +300,6 @@ class DetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Display the image
             Image.asset(
               'assets/images/chicken_bolognese.jpg',
               width: double.infinity,
@@ -329,34 +312,46 @@ class DetailPage extends StatelessWidget {
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-            Text(
-              'Calories: $calories',
-              style: const TextStyle(fontSize: 18),
-            ),
+            Text('Calories: $calories', style: const TextStyle(fontSize: 18)),
             const SizedBox(height: 10),
-            Text(
-              'Protein: $protein',
-              style: const TextStyle(fontSize: 18),
-            ),
+            Text('Protein: $protein', style: const TextStyle(fontSize: 18)),
             const SizedBox(height: 10),
-            Text(
-              'Carbs: $carbs',
-              style: const TextStyle(fontSize: 18),
-            ),
+            Text('Carbs: $carbs', style: const TextStyle(fontSize: 18)),
             const SizedBox(height: 10),
-            Text(
-              'Fats: $fats',
-              style: const TextStyle(fontSize: 18),
-            ),
+            Text('Fats: $fats', style: const TextStyle(fontSize: 18)),
             const SizedBox(height: 10),
-            Text(
-              'Date: $date',
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            SizedBox(height: 20),
+            Text('Date: $date', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+            const SizedBox(height: 20),
             NavigateButton(route: '/explore', text: 'Explore'),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class NavigateButton extends StatelessWidget {
+  final String route;
+  final String text;
+
+  const NavigateButton({required this.route, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: () {
+        context.go(route); // Use GoRouter to navigate
+      },
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        backgroundColor: Colors.blue,
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 16, color: Colors.white),
       ),
     );
   }
