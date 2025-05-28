@@ -353,6 +353,8 @@ class DetailPage extends StatelessWidget {
               'Date: $date',
               style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
+            SizedBox(height: 20),
+            NavigateButton(route: '/explore', text: 'Explore'),
           ],
         ),
       ),
