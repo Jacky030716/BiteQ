@@ -1,5 +1,7 @@
 import 'package:biteq/core/services/redirect_services.dart';
 import 'package:biteq/core/widgets/splash_screen.dart';
+// import 'package:biteq/features/ai_detection/presentation/pages/ai_detection.dart';
+import 'package:biteq/features/ai_detection/presentation/pages/image_picker_page.dart';
 import 'package:biteq/features/home_dashboard/presentation/pages/home_screen.dart';
 
 import 'package:biteq/features/auth/data/models/user_model.dart';
@@ -10,6 +12,7 @@ import 'package:biteq/features/auth/presentation/pages/sign_up_screen.dart';
 import 'package:biteq/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:biteq/features/survey_form/data/repositories/survey_repositories.dart';
 import 'package:biteq/features/survey_form/presentation/pages/survey_page.dart';
+
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -47,13 +50,13 @@ final routerProvider = Provider<GoRouter>((ref) {
   final redirectService = ref.read(redirectServiceProvider);
 
   return GoRouter(
-    initialLocation: '/survey',
-    redirect: (context, state) async {
-      return await redirectService.handleRedirect(
-        authState,
-        state.matchedLocation,
-      );
-    },
+    initialLocation: '/ai_detection',
+    // redirect: (context, state) async {
+    //   return await redirectService.handleRedirect(
+    //     authState,
+    //     state.matchedLocation,
+    //   );
+    // },
     routes: [
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(
@@ -79,6 +82,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           return const SurveyPage(); // Replace with your survey screen
         },
       ),
+      GoRoute(
+        path: '/ai_detection',
+        builder: (context, state) => const ImagePickerPage(),
+
+//         context.go('/ai_detection');  // or
+// Navigator.pushNamed(context, '/ai_detection');
+
+      ),
+
+
+    
     ],
     errorBuilder:
         (context, state) => Scaffold(
