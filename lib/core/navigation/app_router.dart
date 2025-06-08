@@ -1,5 +1,6 @@
 import 'package:biteq/core/services/redirect_services.dart';
 import 'package:biteq/core/widgets/splash_screen.dart';
+import 'package:biteq/features/food_analysis/presentation/pages/food_analysis_page.dart';
 import 'package:biteq/features/home_dashboard/presentation/pages/home_screen.dart';
 
 import 'package:biteq/features/auth/data/models/user_model.dart';
@@ -10,12 +11,12 @@ import 'package:biteq/features/auth/presentation/pages/sign_up_screen.dart';
 import 'package:biteq/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:biteq/features/survey_form/data/repositories/survey_repositories.dart';
 import 'package:biteq/features/survey_form/presentation/pages/survey_page.dart';
+import 'package:biteq/main_navigation_wrapper.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-// Provider for Auth Repository
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository();
 });
@@ -43,19 +44,27 @@ final authStateProvider = FutureProvider<UserModel?>((ref) async {
 });
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
   final redirectService = ref.read(redirectServiceProvider);
 
+  // Create a router notifier to handle auth state changes more efficiently
+  final routerNotifier = RouterNotifier(ref);
+
   return GoRouter(
-    initialLocation: '/survey',
+    initialLocation: '/analysis',
+    refreshListenable:
+        routerNotifier, // Use the notifier as the refresh listener
     redirect: (context, state) async {
+      final authState = ref.read(authStateProvider);
       return await redirectService.handleRedirect(
         authState,
         state.matchedLocation,
       );
     },
     routes: [
-      GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+      GoRoute(
+        path: '/home',
+        builder: (context, state) => const MainNavigationWrapper(),
+      ),
       GoRoute(
         path: '/sign-up',
         builder: (context, state) => const SignUpScreen(),
@@ -73,11 +82,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/forgot-password',
         builder: (context, state) => const ForgotPasswordScreen(),
       ),
+      GoRoute(path: '/survey', builder: (context, state) => const SurveyPage()),
       GoRoute(
-        path: '/survey',
-        builder: (context, state) {
-          return const SurveyPage(); // Replace with your survey screen
-        },
+        path: '/analysis',
+        builder: (context, state) => const FoodAnalysisPage(),
       ),
     ],
     errorBuilder:
@@ -86,3 +94,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
   );
 });
+
+// Create a RouterNotifier class that extends ChangeNotifier
+class RouterNotifier extends ChangeNotifier {
+  final Ref _ref;
+
+  RouterNotifier(this._ref) {
+    // Only notify listeners when the auth state actually changes (not during loading)
+    _ref.listen<AsyncValue<UserModel?>>(authStateProvider, (_, next) {
+      // Only notify if data is available (not during loading state)
+      if (!next.isLoading) {
+        notifyListeners();
+      }
+    });
+  }
+}

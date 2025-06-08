@@ -16,50 +16,41 @@ class RedirectService {
     AsyncValue<UserModel?> authState,
     String matchedLocation,
   ) async {
-    final publicRoutes = [
+    // Define public routes
+    const publicRoutes = [
       '/sign-in',
       '/sign-up',
       '/onboarding',
       '/forgot-password',
     ];
 
+    // Handle loading state
     if (authState.isLoading) {
       return null;
     }
 
+    // Check authentication status
     final isLoggedIn = authState.value != null;
 
-    // Handle public routes
-    if (!isLoggedIn && publicRoutes.contains(matchedLocation)) {
-      return null;
-    }
-
-    // Redirect unauthenticated users
+    // Handle unauthenticated users
     if (!isLoggedIn) {
+      if (publicRoutes.contains(matchedLocation)) {
+        return null; // Allow access to public routes
+      }
+
       final hasDisplayedOnboarding =
           await authRepository.hasDisplayedOnboarding();
 
-      if (!hasDisplayedOnboarding) {
-        return '/onboarding';
-      } else {
-        return '/sign-in';
-      }
+      return hasDisplayedOnboarding ? '/sign-in' : '/onboarding';
     }
 
-    if (isLoggedIn && matchedLocation == '/') {
-      return '/home';
-    }
+    // Handle authenticated users
+    final isSurveyCompleted = await surveyRepositories.getSurveyStatus(
+      authState.value!.email,
+    );
 
-    if (isLoggedIn) {
-      final isSurveyCompleted = await surveyRepositories.getSurveyStatus(
-        authState.value!.email,
-      );
-
-      if (!isSurveyCompleted) {
-        return '/survey';
-      } else {
-        return null;
-      }
+    if (matchedLocation == '/') {
+      return isSurveyCompleted ? '/home' : '/survey';
     }
 
     return null;

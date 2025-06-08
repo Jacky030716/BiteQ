@@ -17,7 +17,7 @@ class HomeScreen extends ConsumerWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            NavigateButton(route: '/sign-up', text: 'Go to Sign Up'),
+            NavigateButton(route: '/analysis', text: 'Go to Sign Up'),
             ElevatedButton(
               onPressed: () {
                 signOutViewModel.signOut(() => context.go('/sign-in'), ref);

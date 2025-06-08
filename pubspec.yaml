@@ -44,11 +44,13 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   flutter_svg: ^2.0.17
   cached_network_image: ^3.4.1
-  flutter_local_notifications: ^19.0.0
+  image_picker: ^1.1.2
+  # flutter_local_notifications: ^19.0.0
   google_fonts: ^6.2.1
   fluttertoast: ^8.2.1
   shared_preferences: ^2.5.3
   google_sign_in: ^6.3.0
+  flutter_gemini: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -77,6 +79,7 @@ flutter:
   #   - images/a_dot_ham.jpeg
   assets:
     - assets/images/
+    - assets/icons/
     - assets/.env
 
   # An image asset can refer to one or more resolution-specific "variants", see
