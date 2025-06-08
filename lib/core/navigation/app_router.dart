@@ -53,7 +53,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final routerNotifier = RouterNotifier(ref);
 
   return GoRouter(
-    initialLocation: '/analysis',
+    initialLocation: '/home',
     refreshListenable:
         routerNotifier, // Use the notifier as the refresh listener
     redirect: (context, state) async {
@@ -76,7 +76,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/sign-in',
         builder: (context, state) => const SignInScreen(),
       ),
-      GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
+      // GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
+      // GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingPage(),
@@ -86,10 +87,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ForgotPasswordScreen(),
       ),
       GoRoute(path: '/survey', builder: (context, state) => const SurveyPage()),
-      GoRoute(
-        path: '/analysis',
-        builder: (context, state) => const FoodAnalysisPage(),
-      ),
+      // GoRoute(
+      //   path: '/analysis',
+      //   builder: (context, state) => const FoodAnalysisPage(),
+      // ),
       GoRoute(
         path: '/explore',
         builder: (context, state) => const ExplorePage(),

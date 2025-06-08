@@ -1,25 +1,10 @@
+import 'package:biteq/features/home_dashboard/presentation/pages/detail_page.dart';
+import 'package:biteq/features/home_dashboard/presentation/widgets/piechart_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:biteq/features/auth/presentation/viewmodel/sign_out_view_model.dart';
 import 'package:go_router/go_router.dart';
 import 'package:percent_indicator/percent_indicator.dart';
-import 'package:pie_chart/pie_chart.dart';
-
-void main() {
-  runApp(const ProviderScope(child: MyApp()));
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: const HomeScreen(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -310,65 +295,6 @@ class _ScannedItem extends StatelessWidget {
   }
 }
 
-class DetailPage extends StatelessWidget {
-  final String foodName;
-  final String calories;
-  final String protein;
-  final String carbs;
-  final String fats;
-  final String date;
-
-  const DetailPage({
-    required this.foodName,
-    required this.calories,
-    required this.protein,
-    required this.carbs,
-    required this.fats,
-    required this.date,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Food Details')),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Image.asset(
-              'assets/images/chicken_bolognese.jpg',
-              width: double.infinity,
-              height: 300,
-              fit: BoxFit.cover,
-            ),
-            const SizedBox(height: 20),
-            Text(
-              foodName,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            Text('Calories: $calories', style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 10),
-            Text('Protein: $protein', style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 10),
-            Text('Carbs: $carbs', style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 10),
-            Text('Fats: $fats', style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 10),
-            Text(
-              'Date: $date',
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            const SizedBox(height: 20),
-            NavigateButton(route: '/explore', text: 'Explore'),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class NavigateButton extends StatelessWidget {
   final String route;
   final String text;
@@ -385,57 +311,6 @@ class NavigateButton extends StatelessWidget {
         backgroundColor: const Color.fromARGB(255, 99, 97, 97),
       ),
       child: Text(text),
-    );
-  }
-}
-
-class PieChartScreen extends StatelessWidget {
-  const PieChartScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final proteinGrams = 32;
-    final carbGrams = 50;
-    final fatGrams = 60;
-
-    // Calculate calories
-    final proteinCalories = proteinGrams * 4;
-    final carbCalories = carbGrams * 4;
-    final fatCalories = fatGrams * 9;
-
-    final dataMap = <String, double>{
-      "Protein": proteinCalories.toDouble(),
-      "Carbohydrate": carbCalories.toDouble(),
-      "Fats": fatCalories.toDouble(),
-    };
-
-    final colorList = <Color>[Colors.orange, Colors.yellow, Colors.green];
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Calorie Breakdown Pie Chart')),
-      body: Center(
-        child: PieChart(
-          dataMap: dataMap,
-          animationDuration: const Duration(milliseconds: 800),
-          chartRadius: MediaQuery.of(context).size.width / 1.5,
-          colorList: colorList,
-          chartType: ChartType.disc,
-          ringStrokeWidth: 32,
-          centerText: "Calories",
-          legendOptions: const LegendOptions(
-            showLegendsInRow: false,
-            legendPosition: LegendPosition.right,
-            showLegends: true,
-            legendShape: BoxShape.circle,
-            legendTextStyle: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          chartValuesOptions: const ChartValuesOptions(
-            showChartValuesInPercentage: true,
-            decimalPlaces: 1,
-            showChartValuesOutside: false,
-          ),
-        ),
-      ),
     );
   }
 }

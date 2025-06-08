@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:biteq/core/widgets/bottom_navigation_bar.dart';
 
 // Page widgets
+import "package:biteq/features/home_dashboard/presentation/pages/home_screen.dart";
 import 'package:biteq/features/food_analysis/presentation/pages/food_analysis_page.dart';
 
 class MainNavigationWrapper extends ConsumerStatefulWidget {
@@ -23,7 +24,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> {
   void initState() {
     super.initState();
     _screens = [
-      const FoodAnalysisPage(), // Index 0 - Home
+      const HomeScreen(), // Index 0 - Home
       const FoodAnalysisPage(), // Index 1 - Meals
       const FoodAnalysisPage(), // Index 2 - Camera
       const FoodAnalysisPage(), // Index 3 - Analysis
@@ -129,7 +130,7 @@ class _MainNavigationWrapperWithPageViewState
           });
         },
         children: const [
-          FoodAnalysisPage(),
+          HomeScreen(),
           FoodAnalysisPage(),
           FoodAnalysisPage(),
           FoodAnalysisPage(),
