@@ -13,6 +13,9 @@ import 'package:biteq/features/survey_form/data/repositories/survey_repositories
 import 'package:biteq/features/survey_form/presentation/pages/survey_page.dart';
 import 'package:biteq/main_navigation_wrapper.dart';
 
+import 'package:biteq/features/posting/explore_page.dart';
+import 'package:biteq/features/posting/create_post_page.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -86,6 +89,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/analysis',
         builder: (context, state) => const FoodAnalysisPage(),
+      ),
+      GoRoute(
+        path: '/explore',
+        builder: (context, state) => const ExplorePage(),
+      ),
+      GoRoute(
+        path: '/create-post',
+        builder: (context, state) => const CreatePostPage(),
       ),
     ],
     errorBuilder:

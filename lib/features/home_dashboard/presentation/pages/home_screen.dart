@@ -17,13 +17,16 @@ class HomeScreen extends ConsumerWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            NavigateButton(route: '/analysis', text: 'Go to Sign Up'),
+            NavigateButton(route: '/analysis', text: 'Go to Analysis'),
+            NavigateButton(route: '/sign-up', text: 'Go to Sign Up'),
+            NavigateButton(route: '/explore', text: 'Explore'),
             ElevatedButton(
               onPressed: () {
                 signOutViewModel.signOut(() => context.go('/sign-in'), ref);
               },
               child: Text('Sign Out'),
             ),
+            SizedBox(height: 20),
           ],
         ),
       ),
