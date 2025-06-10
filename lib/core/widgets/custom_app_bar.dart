@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:biteq/core/theme/_app.Palette.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {

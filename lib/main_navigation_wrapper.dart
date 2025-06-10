@@ -1,3 +1,4 @@
+import 'package:biteq/features/profile/presentation/user_profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:biteq/core/widgets/bottom_navigation_bar.dart';
@@ -28,7 +29,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> {
       const FoodAnalysisPage(), // Index 1 - Meals
       const FoodAnalysisPage(), // Index 2 - Camera
       const FoodAnalysisPage(), // Index 3 - Analysis
-      const FoodAnalysisPage(), // Index 4 - Profile
+      const UserProfileScreen(), // Index 4 - Profile
     ];
   }
 
@@ -134,7 +135,7 @@ class _MainNavigationWrapperWithPageViewState
           FoodAnalysisPage(),
           FoodAnalysisPage(),
           FoodAnalysisPage(),
-          FoodAnalysisPage(),
+          UserProfileScreen(),
         ],
       ),
       bottomNavigationBar: FoodTrackingBottomNav(

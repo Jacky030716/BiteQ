@@ -221,7 +221,7 @@ class _EditFoodDialogState extends State<EditFoodDialog> {
                     child: TextButton(
                       onPressed: () => Navigator.pop(context),
                       style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFFAA6231),
+                        foregroundColor: Colors.blueAccent,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       child: const Text(
@@ -247,7 +247,7 @@ class _EditFoodDialogState extends State<EditFoodDialog> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFAA6231),
+                        backgroundColor: Colors.blueAccent,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 12),

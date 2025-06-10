@@ -1,7 +1,4 @@
 import 'package:biteq/core/services/redirect_services.dart';
-import 'package:biteq/core/widgets/splash_screen.dart';
-import 'package:biteq/features/food_analysis/presentation/pages/food_analysis_page.dart';
-import 'package:biteq/features/home_dashboard/presentation/pages/home_screen.dart';
 
 import 'package:biteq/features/auth/data/models/user_model.dart';
 import 'package:biteq/features/auth/data/repositories/auth_repository.dart';
