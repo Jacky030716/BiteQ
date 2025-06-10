@@ -6,7 +6,6 @@ import 'package:biteq/features/ai_detection/presentation/viewmodel/ai_detection_
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-
 class ImagePickerPage extends StatefulWidget {
   const ImagePickerPage({Key? key}) : super(key: key);
 
@@ -38,32 +37,31 @@ class _ImagePickerPageState extends State<ImagePickerPage> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-  if (_isModelLoading || !viewModel.isModelLoaded) {
-    print('[ERROR] Model is not ready yet');
-    return;
+    if (_isModelLoading || !viewModel.isModelLoaded) {
+      print('[ERROR] Model is not ready yet');
+      return;
+    }
+
+    final XFile? file = await picker.pickImage(source: source);
+    if (file == null) return;
+
+    final path = await loadImage(file.path);
+    setState(() {
+      _imagePath = path;
+    });
+
+    final result = await viewModel.runModelOnImage(path);
+    print('[DEBUG] Result from model: $result');
+
+    setState(() {
+      _results = result;
+    });
+
+    // ✅ Save to Firestore
+    if (result != null && result.isNotEmpty) {
+      await _saveDetectionResult(result);
+    }
   }
-
-  final XFile? file = await picker.pickImage(source: source);
-  if (file == null) return;
-
-  final path = await loadImage(file.path);
-  setState(() {
-    _imagePath = path;
-  });
-
-  final result = await viewModel.runModelOnImage(path);
-  print('[DEBUG] Result from model: $result');
-
-  setState(() {
-    _results = result;
-  });
-
-  // ✅ Save to Firestore
-  if (result != null && result.isNotEmpty) {
-    await _saveDetectionResult(result);
-  }
-}
-
 
   Widget _buildResults() {
     if (_results == null || _results!.isEmpty) {
@@ -78,39 +76,42 @@ class _ImagePickerPageState extends State<ImagePickerPage> {
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         const SizedBox(height: 8),
-        ..._results!.map((r) => Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: ListTile(
-                title: Text(r['label']),
-                trailing: Text('${(r['confidence'] * 100).toStringAsFixed(1)}%'),
-              ),
-            )),
+        ..._results!.map(
+          (r) => Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ListTile(
+              title: Text(r['label']),
+              trailing: Text('${(r['confidence'] * 100).toStringAsFixed(1)}%'),
+            ),
+          ),
+        ),
       ],
     );
   }
 
   Future<void> _saveDetectionResult(List<dynamic> results) async {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user == null) {
-    print('[ERROR] No user is signed in.');
-    return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print('[ERROR] No user is signed in.');
+      return;
+    }
+
+    final timestamp = Timestamp.now();
+    final firestore = FirebaseFirestore.instance;
+
+    for (var result in results) {
+      await firestore.collection('detection_results').add({
+        'email': user.email,
+        'timestamp': timestamp,
+        'label': result['label'],
+        'confidence': result['confidence'],
+      });
+    }
+
+    print('[DEBUG] Detection results saved to Firestore.');
   }
-
-  final timestamp = Timestamp.now();
-  final firestore = FirebaseFirestore.instance;
-
-  for (var result in results) {
-    await firestore.collection('detection_results').add({
-      'email': user.email,
-      'timestamp': timestamp,
-      'label': result['label'],
-      'confidence': result['confidence'],
-    });
-  }
-
-  print('[DEBUG] Detection results saved to Firestore.');
-}
-
 
   @override
   void dispose() {

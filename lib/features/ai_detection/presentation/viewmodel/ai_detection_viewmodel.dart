@@ -2,7 +2,8 @@
 import 'package:tflite_v2/tflite_v2.dart';
 
 class AIDetectionViewModel {
-  static final AIDetectionViewModel _instance = AIDetectionViewModel._internal();
+  static final AIDetectionViewModel _instance =
+      AIDetectionViewModel._internal();
 
   factory AIDetectionViewModel() => _instance;
 
@@ -51,4 +52,3 @@ class AIDetectionViewModel {
     _modelLoaded = false;
   }
 }
-

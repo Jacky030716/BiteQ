@@ -1,3 +1,4 @@
+import 'package:biteq/features/ai_detection/presentation/pages/ai_detection_mobile.dart';
 import 'package:biteq/features/profile/presentation/user_profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,7 +28,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> {
     _screens = [
       const HomeScreen(), // Index 0 - Home
       const FoodAnalysisPage(), // Index 1 - Meals
-      const FoodAnalysisPage(), // Index 2 - Camera
+      const ImagePickerPage(), // Index 2 - Camera
       const FoodAnalysisPage(), // Index 3 - Analysis
       const UserProfileScreen(), // Index 4 - Profile
     ];
@@ -133,7 +134,7 @@ class _MainNavigationWrapperWithPageViewState
         children: const [
           HomeScreen(),
           FoodAnalysisPage(),
-          FoodAnalysisPage(),
+          ImagePickerPage(),
           FoodAnalysisPage(),
           UserProfileScreen(),
         ],
