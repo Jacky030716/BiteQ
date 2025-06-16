@@ -51,6 +51,7 @@ dependencies:
   google_sign_in: ^6.3.0
   percent_indicator: ^4.2.2
   pie_chart: ^5.4.0
+  fl_chart: ^0.64.0
 
 dev_dependencies:
   flutter_test:

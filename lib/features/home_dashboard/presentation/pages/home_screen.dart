@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:biteq/features/auth/presentation/viewmodel/sign_out_view_model.dart';
 import 'package:go_router/go_router.dart';
-import 'package:percent_indicator/percent_indicator.dart';
-import 'package:pie_chart/pie_chart.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'chart.dart'; // Import the new chart file
 
 // Data Models
 class FoodItem {
@@ -26,28 +26,6 @@ class FoodItem {
     required this.dateScanned,
     this.imagePath = 'assets/images/chicken_bolognese.jpg',
   });
-
-  FoodItem copyWith({
-    String? id,
-    String? name,
-    int? calories,
-    double? protein,
-    double? carbs,
-    double? fats,
-    DateTime? dateScanned,
-    String? imagePath,
-  }) {
-    return FoodItem(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      calories: calories ?? this.calories,
-      protein: protein ?? this.protein,
-      carbs: carbs ?? this.carbs,
-      fats: fats ?? this.fats,
-      dateScanned: dateScanned ?? this.dateScanned,
-      imagePath: imagePath ?? this.imagePath,
-    );
-  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -76,7 +54,16 @@ class FoodItem {
   }
 }
 
-// CRUD Service
+// Chart data for different time periods
+class ChartData {
+  final String label;
+  final double calories;
+  final bool isToday;
+
+  ChartData({required this.label, required this.calories, this.isToday = false});
+}
+
+// Read-only Service
 class FoodService {
   final List<FoodItem> _foodItems = [
     FoodItem(
@@ -108,20 +95,60 @@ class FoodService {
     ),
   ];
 
-  // CREATE
-  Future<void> addFoodItem(FoodItem foodItem) async {
-    await Future.delayed(const Duration(milliseconds: 500)); // Simulate API call
-    _foodItems.insert(0, foodItem);
+  // Mock daily data (24 hours)
+  final List<ChartData> _dailyData = [
+    ChartData(label: '6', calories: 0),
+    ChartData(label: '8', calories: 150),
+    ChartData(label: '10', calories: 0),
+    ChartData(label: '12', calories: 450),
+    ChartData(label: '14', calories: 0),
+    ChartData(label: '16', calories: 275),
+    ChartData(label: '18', calories: 625, isToday: true), // Current hour
+    ChartData(label: '20', calories: 0),
+    ChartData(label: '22', calories: 0),
+  ];
+
+  // Mock weekly data
+  final List<ChartData> _weeklyData = [
+    ChartData(label: 'Mon', calories: 1200),
+    ChartData(label: 'Tue', calories: 1800),
+    ChartData(label: 'Wed', calories: 1500),
+    ChartData(label: 'Thu', calories: 2100),
+    ChartData(label: 'Fri', calories: 2568, isToday: true), // Today
+    ChartData(label: 'Sat', calories: 0),
+    ChartData(label: 'Sun', calories: 0),
+  ];
+
+  // Mock monthly data (30-31 days)
+  List<ChartData> _getMonthlyData() {
+    final now = DateTime.now();
+    final daysInMonth = DateTime(now.year, now.month + 1, 0).day; // Get last day of current month
+    List<ChartData> monthlyData = [];
+
+    // Simple mock data for each day of the month
+    for (int i = 1; i <= daysInMonth; i++) {
+      double calories = 0;
+      bool isToday = (i == now.day); // Mark today's bar
+
+      // Add some sample calories for certain days to make the chart interesting
+      if (i % 5 == 0) calories = 1500 + (i * 20.0);
+      if (i % 7 == 0) calories = 2000 + (i * 15.0);
+      if (i % 3 == 0) calories = 1000 + (i * 10.0);
+      if (i == now.day) calories = 2568; // Ensure today has a value
+
+      monthlyData.add(ChartData(label: i.toString(), calories: calories, isToday: isToday));
+    }
+    return monthlyData;
   }
 
   // READ
   Future<List<FoodItem>> getAllFoodItems() async {
-    await Future.delayed(const Duration(milliseconds: 300)); // Simulate API call
+    await Future.delayed(const Duration(milliseconds: 300));
     return List.from(_foodItems);
   }
 
   Future<FoodItem?> getFoodItemById(String id) async {
-    await Future.delayed(const Duration(milliseconds: 300)); // Simulate API call
+    await Future.delayed(const Duration(milliseconds: 300));
     try {
       return _foodItems.firstWhere((item) => item.id == id);
     } catch (e) {
@@ -129,25 +156,24 @@ class FoodService {
     }
   }
 
-  // UPDATE
-  Future<void> updateFoodItem(FoodItem updatedItem) async {
-    await Future.delayed(const Duration(milliseconds: 500)); // Simulate API call
-    final index = _foodItems.indexWhere((item) => item.id == updatedItem.id);
-    if (index != -1) {
-      _foodItems[index] = updatedItem;
+  Future<List<ChartData>> getChartData(String timePeriod) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    switch (timePeriod) {
+      case 'Day':
+        return List.from(_dailyData);
+      case 'Week':
+        return List.from(_weeklyData);
+      case 'Month':
+        return _getMonthlyData(); // Call the new method for monthly data
+      default:
+        return List.from(_weeklyData);
     }
-  }
-
-  // DELETE
-  Future<void> deleteFoodItem(String id) async {
-    await Future.delayed(const Duration(milliseconds: 500)); // Simulate API call
-    _foodItems.removeWhere((item) => item.id == id);
   }
 
   // Get total nutrition for today
   Future<Map<String, double>> getTodayNutrition() async {
     final today = DateTime.now();
-    final todayItems = _foodItems.where((item) => 
+    final todayItems = _foodItems.where((item) =>
       item.dateScanned.day == today.day &&
       item.dateScanned.month == today.month &&
       item.dateScanned.year == today.year
@@ -182,59 +208,16 @@ final foodItemsProvider = FutureProvider<List<FoodItem>>((ref) async {
   return await foodService.getAllFoodItems();
 });
 
+// Dynamic chart data provider that depends on selected time period
+final chartDataProvider = FutureProvider<List<ChartData>>((ref) async {
+  final foodService = ref.watch(foodServiceProvider);
+  final selectedTimePeriod = ref.watch(selectedTimePeriodProvider);
+  return await foodService.getChartData(selectedTimePeriod);
+});
+
 final todayNutritionProvider = FutureProvider<Map<String, double>>((ref) async {
   final foodService = ref.watch(foodServiceProvider);
   return await foodService.getTodayNutrition();
-});
-
-// State notifier for managing food items
-class FoodItemsNotifier extends StateNotifier<AsyncValue<List<FoodItem>>> {
-  final FoodService _foodService;
-
-  FoodItemsNotifier(this._foodService) : super(const AsyncValue.loading()) {
-    loadFoodItems();
-  }
-
-  Future<void> loadFoodItems() async {
-    try {
-      final items = await _foodService.getAllFoodItems();
-      state = AsyncValue.data(items);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-
-  Future<void> addFoodItem(FoodItem item) async {
-    try {
-      await _foodService.addFoodItem(item);
-      await loadFoodItems();
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-
-  Future<void> updateFoodItem(FoodItem item) async {
-    try {
-      await _foodService.updateFoodItem(item);
-      await loadFoodItems();
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-
-  Future<void> deleteFoodItem(String id) async {
-    try {
-      await _foodService.deleteFoodItem(id);
-      await loadFoodItems();
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-}
-
-final foodItemsNotifierProvider = StateNotifierProvider<FoodItemsNotifier, AsyncValue<List<FoodItem>>>((ref) {
-  final foodService = ref.watch(foodServiceProvider);
-  return FoodItemsNotifier(foodService);
 });
 
 void main() {
@@ -253,377 +236,293 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// Time period selection provider
+final selectedTimePeriodProvider = StateProvider<String>((ref) => 'Week');
+
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final signOutViewModel = ref.watch(signOutViewModelProvider.notifier);
-    final foodItemsAsync = ref.watch(foodItemsNotifierProvider);
+    final foodItemsAsync = ref.watch(foodItemsProvider);
+    final chartDataAsync = ref.watch(chartDataProvider);
     final todayNutritionAsync = ref.watch(todayNutritionProvider);
+    final selectedTimePeriod = ref.watch(selectedTimePeriodProvider);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F3F7),
       appBar: AppBar(
-        title: Row(
-          children: [
-            Image.asset(
-              'assets/images/logo.png',
-              height: 40,
-              width: 40,
-              fit: BoxFit.cover,
-            ),
-            const SizedBox(width: 10),
-            const Text('BiteQ'),
-          ],
+        backgroundColor: const Color(0xFFF5F3F7),
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'Activity',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        backgroundColor: const Color.fromARGB(255, 172, 170, 170),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              _showAddFoodDialog(context, ref);
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.exit_to_app),
+            icon: const Icon(Icons.exit_to_app, color: Colors.black),
             onPressed: () {
               signOutViewModel.signOut(() => context.go('/sign-in'), ref);
             },
           ),
         ],
       ),
-      backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Today • Yesterday',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            const SizedBox(height: 8),
-            // Nutrition Summary Card
-            todayNutritionAsync.when(
-              data: (nutrition) => Container(
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Consumed',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${nutrition['calories']?.toInt() ?? 0} Calories',
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.pie_chart,
-                        size: 40,
-                        color: Colors.grey,
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => PieChartScreen(nutrition: nutrition),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              loading: () => const CircularProgressIndicator(),
-              error: (error, stack) => Text('Error: $error'),
-            ),
-            const SizedBox(height: 20),
-            // Nutrient Charts
-            todayNutritionAsync.when(
-              data: (nutrition) => Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Overview Section
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _NutrientCircularChart(
-                    label: 'Protein',
-                    currentValue: nutrition['protein']?.toInt() ?? 0,
-                    goalValue: 150,
-                    color: Colors.orange,
+                  const Text(
+                    'Overview',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
                   ),
-                  _NutrientCircularChart(
-                    label: 'Carbohydrate',
-                    currentValue: nutrition['carbs']?.toInt() ?? 0,
-                    goalValue: 225,
-                    color: Colors.yellow,
-                  ),
-                  _NutrientCircularChart(
-                    label: 'Fats',
-                    currentValue: nutrition['fats']?.toInt() ?? 0,
-                    goalValue: 78,
-                    color: Colors.green,
+                  GestureDetector(
+                    onTap: () => _showTimePeriodBottomSheet(context, ref),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 3,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            selectedTimePeriod,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.grey[600]),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
-              loading: () => const CircularProgressIndicator(),
-              error: (error, stack) => Text('Error: $error'),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Recently Scanned',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            // Food Items List
-            Expanded(
-              child: foodItemsAsync.when(
+              const SizedBox(height: 16),
+
+              // Calories Overview
+              todayNutritionAsync.when(
+                data: (nutrition) => Row(
+                  children: [
+                    Text(
+                      '${nutrition['calories']?.toInt() ?? 0}',
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Total kcal',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+                loading: () => const CircularProgressIndicator(),
+                error: (error, stack) => Text('Error: $error'),
+              ),
+              const SizedBox(height: 8),
+
+              // Date Range
+              Text(
+                _getDateRangeText(selectedTimePeriod),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Dynamic Chart - Now uses the new widget
+              chartDataAsync.when(
+                data: (chartData) => CalorieBarChart(
+                  chartData: chartData,
+                  selectedTimePeriod: selectedTimePeriod,
+                ),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stack) => Center(child: Text('Error: $error')),
+              ),
+              const SizedBox(height: 32),
+
+              // Recently Scanned Section
+              const Text(
+                'Recently Scanned',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Food Items List
+              foodItemsAsync.when(
                 data: (foodItems) => ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                   itemCount: foodItems.length,
                   itemBuilder: (context, index) {
                     final foodItem = foodItems[index];
-                    return _ScannedItem(
-                      foodItem: foodItem,
-                      onEdit: () => _showEditFoodDialog(context, ref, foodItem),
-                      onDelete: () => _showDeleteConfirmation(context, ref, foodItem),
-                    );
+                    return _ScannedItem(foodItem: foodItem);
                   },
                 ),
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, stack) => Center(child: Text('Error: $error')),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  void _showAddFoodDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
+  void _showTimePeriodBottomSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AddEditFoodDialog(
-        onSave: (foodItem) {
-          ref.read(foodItemsNotifierProvider.notifier).addFoodItem(foodItem);
-        },
-      ),
-    );
-  }
-
-  void _showEditFoodDialog(BuildContext context, WidgetRef ref, FoodItem foodItem) {
-    showDialog(
-      context: context,
-      builder: (context) => AddEditFoodDialog(
-        foodItem: foodItem,
-        onSave: (updatedItem) {
-          ref.read(foodItemsNotifierProvider.notifier).updateFoodItem(updatedItem);
-        },
-      ),
-    );
-  }
-
-  void _showDeleteConfirmation(BuildContext context, WidgetRef ref, FoodItem foodItem) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Food Item'),
-        content: Text('Are you sure you want to delete "${foodItem.name}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
           ),
-          TextButton(
-            onPressed: () {
-              ref.read(foodItemsNotifierProvider.notifier).deleteFoodItem(foodItem.id);
-              Navigator.pop(context);
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Select Time Period',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              _buildTimePeriodOption(context, ref, 'Day'),
+              _buildTimePeriodOption(context, ref, 'Week'),
+              _buildTimePeriodOption(context, ref, 'Month'),
+              const SizedBox(height: 20),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
-}
 
-class AddEditFoodDialog extends StatefulWidget {
-  final FoodItem? foodItem;
-  final Function(FoodItem) onSave;
+  Widget _buildTimePeriodOption(BuildContext context, WidgetRef ref, String period) {
+    final selectedTimePeriod = ref.watch(selectedTimePeriodProvider);
+    final isSelected = selectedTimePeriod == period;
 
-  const AddEditFoodDialog({
-    super.key,
-    this.foodItem,
-    required this.onSave,
-  });
-
-  @override
-  State<AddEditFoodDialog> createState() => _AddEditFoodDialogState();
-}
-
-class _AddEditFoodDialogState extends State<AddEditFoodDialog> {
-  late TextEditingController _nameController;
-  late TextEditingController _caloriesController;
-  late TextEditingController _proteinController;
-  late TextEditingController _carbsController;
-  late TextEditingController _fatsController;
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.foodItem?.name ?? '');
-    _caloriesController = TextEditingController(text: widget.foodItem?.calories.toString() ?? '');
-    _proteinController = TextEditingController(text: widget.foodItem?.protein.toString() ?? '');
-    _carbsController = TextEditingController(text: widget.foodItem?.carbs.toString() ?? '');
-    _fatsController = TextEditingController(text: widget.foodItem?.fats.toString() ?? '');
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isEditing = widget.foodItem != null;
-
-    return AlertDialog(
-      title: Text(isEditing ? 'Edit Food Item' : 'Add Food Item'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+    return InkWell(
+      onTap: () {
+        ref.read(selectedTimePeriodProvider.notifier).state = period;
+        Navigator.pop(context);
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
           children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Food Name'),
+            Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              color: isSelected ? const Color(0xFF8B5FBF) : Colors.grey,
             ),
-            TextField(
-              controller: _caloriesController,
-              decoration: const InputDecoration(labelText: 'Calories'),
-              keyboardType: TextInputType.number,
-            ),
-            TextField(
-              controller: _proteinController,
-              decoration: const InputDecoration(labelText: 'Protein (g)'),
-              keyboardType: TextInputType.number,
-            ),
-            TextField(
-              controller: _carbsController,
-              decoration: const InputDecoration(labelText: 'Carbs (g)'),
-              keyboardType: TextInputType.number,
-            ),
-            TextField(
-              controller: _fatsController,
-              decoration: const InputDecoration(labelText: 'Fats (g)'),
-              keyboardType: TextInputType.number,
+            const SizedBox(width: 12),
+            Text(
+              period,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                color: isSelected ? const Color(0xFF8B5FBF) : Colors.black87,
+              ),
             ),
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () {
-            final foodItem = FoodItem(
-              id: widget.foodItem?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-              name: _nameController.text,
-              calories: int.tryParse(_caloriesController.text) ?? 0,
-              protein: double.tryParse(_proteinController.text) ?? 0.0,
-              carbs: double.tryParse(_carbsController.text) ?? 0.0,
-              fats: double.tryParse(_fatsController.text) ?? 0.0,
-              dateScanned: widget.foodItem?.dateScanned ?? DateTime.now(),
-            );
-            widget.onSave(foodItem);
-            Navigator.pop(context);
-          },
-          child: Text(isEditing ? 'Update' : 'Add'),
-        ),
-      ],
     );
   }
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _caloriesController.dispose();
-    _proteinController.dispose();
-    _carbsController.dispose();
-    _fatsController.dispose();
-    super.dispose();
+  String _getDateRangeText(String timePeriod) {
+    final now = DateTime.now();
+
+    switch (timePeriod) {
+      case 'Day':
+        return '${now.day} ${_getMonthName(now.month)} ${now.year}';
+      case 'Week':
+        // Get the current day of the week (1 for Monday, 7 for Sunday)
+        int currentWeekday = now.weekday;
+        // Calculate the start of the week (Monday)
+        final startOfWeek = now.subtract(Duration(days: currentWeekday - 1));
+        // Calculate the end of the week (Sunday)
+        final endOfWeek = startOfWeek.add(const Duration(days: 6));
+
+        // Handle case where start and end month might be different
+        if (startOfWeek.month == endOfWeek.month) {
+          return '${startOfWeek.day} - ${endOfWeek.day} ${_getMonthName(now.month)} ${now.year}';
+        } else {
+          return '${startOfWeek.day} ${_getMonthName(startOfWeek.month)} - ${endOfWeek.day} ${_getMonthName(endOfWeek.month)} ${now.year}';
+        }
+
+      case 'Month':
+        return '${_getMonthName(now.month)} ${now.year}';
+      default:
+        return '1 - 7 May 2024'; // Fallback or default
+    }
   }
-}
 
-class _NutrientCircularChart extends StatelessWidget {
-  final String label;
-  final int currentValue;
-  final int goalValue;
-  final Color color;
-
-  const _NutrientCircularChart({
-    required this.label,
-    required this.currentValue,
-    required this.goalValue,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final double percent = (currentValue / goalValue).clamp(0, 1);
-
-    return CircularPercentIndicator(
-      radius: 60,
-      lineWidth: 8,
-      percent: percent,
-      center: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '${currentValue}g',
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Consumed',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
-          ),
-        ],
-      ),
-      progressColor: color,
-      backgroundColor: Colors.grey[300]!,
-      circularStrokeCap: CircularStrokeCap.round,
-      animation: true,
-      animationDuration: 1000,
-    );
+  String _getMonthName(int month) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return months[month - 1];
   }
 }
 
 class _ScannedItem extends StatelessWidget {
   final FoodItem foodItem;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
 
   const _ScannedItem({
     required this.foodItem,
-    required this.onEdit,
-    required this.onDelete,
   });
 
   @override
@@ -633,96 +532,73 @@ class _ScannedItem extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DetailPage(
-              foodItem: foodItem,
-              onEdit: onEdit,
-              onDelete: onDelete,
-            ),
+            builder: (context) => DetailPage(foodItem: foodItem),
           ),
         );
       },
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 10),
-        color: Colors.grey[50],
-        elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.all(10),
-          leading: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.asset(
-              foodItem.imagePath,
-              width: 50,
-              height: 50,
-              fit: BoxFit.cover,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 6,
             ),
-          ),
-          title: Text(
-            foodItem.name,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+          ],
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                foodItem.imagePath,
+                width: 60,
+                height: 60,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.local_fire_department, size: 16, color: Colors.red),
-                  const SizedBox(width: 4),
-                  Text('${foodItem.calories} cal', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                  const SizedBox(width: 10),
-                  const Icon(Icons.pets, size: 16, color: Colors.orange),
-                  const SizedBox(width: 4),
-                  Text('${foodItem.protein}g', style: const TextStyle(fontSize: 14)),
-                  const SizedBox(width: 10),
-                  const Icon(Icons.local_pizza, size: 16, color: Colors.yellow),
-                  const SizedBox(width: 4),
-                  Text('${foodItem.carbs}g', style: const TextStyle(fontSize: 14)),
-                  const SizedBox(width: 10),
-                  const Icon(Icons.local_drink, size: 16, color: Colors.green),
-                  const SizedBox(width: 4),
-                  Text('${foodItem.fats}g', style: const TextStyle(fontSize: 14)),
+                  Text(
+                    foodItem.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${foodItem.calories} cal • ${foodItem.protein}g protein',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${foodItem.dateScanned.hour}:${foodItem.dateScanned.minute.toString().padLeft(2, '0')}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[500],
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                '${foodItem.dateScanned.day}/${foodItem.dateScanned.month}/${foodItem.dateScanned.year} | ${foodItem.dateScanned.hour}:${foodItem.dateScanned.minute.toString().padLeft(2, '0')}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
-          ),
-          trailing: PopupMenuButton(
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'edit',
-                child: const Row(
-                  children: [
-                    Icon(Icons.edit, size: 16),
-                    SizedBox(width: 8),
-                    Text('Edit'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'delete',
-                child: const Row(
-                  children: [
-                    Icon(Icons.delete, size: 16, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Delete', style: TextStyle(color: Colors.red)),
-                  ],
-                ),
-              ),
-            ],
-            onSelected: (value) {
-              if (value == 'edit') {
-                onEdit();
-              } else if (value == 'delete') {
-                onDelete();
-              }
-            },
-          ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Colors.grey[400],
+            ),
+          ],
         ),
       ),
     );
@@ -731,89 +607,159 @@ class _ScannedItem extends StatelessWidget {
 
 class DetailPage extends StatelessWidget {
   final FoodItem foodItem;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
 
   const DetailPage({
     super.key,
     required this.foodItem,
-    required this.onEdit,
-    required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F3F7),
       appBar: AppBar(
-        title: const Text('Food Details'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: onEdit,
+        backgroundColor: const Color(0xFFF5F3F7),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Food Details',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
           ),
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Delete Food Item'),
-                  content: Text('Are you sure you want to delete "${foodItem.name}"?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        onDelete();
-                        Navigator.pop(context); // Close dialog
-                        Navigator.pop(context); // Go back to home
-                      },
-                      style: TextButton.styleFrom(foregroundColor: Colors.red),
-                      child: const Text('Delete'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.asset(
-              foodItem.imagePath,
+            Container(
               width: double.infinity,
               height: 300,
-              fit: BoxFit.cover,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.2),
+                    spreadRadius: 2,
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.asset(
+                  foodItem.imagePath,
+                  fit: BoxFit.cover,
+                ),
+              ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             Text(
               foodItem.name,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
-            const SizedBox(height: 20),
-            Text('Calories: ${foodItem.calories}', style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 10),
-            Text('Protein: ${foodItem.protein}g', style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 10),
-            Text('Carbs: ${foodItem.carbs}g', style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 10),
-            Text('Fats: ${foodItem.fats}g', style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 10),
-            Text(
-              'Date: ${foodItem.dateScanned.day}/${foodItem.dateScanned.month}/${foodItem.dateScanned.year} | ${foodItem.dateScanned.hour}:${foodItem.dateScanned.minute.toString().padLeft(2, '0')}',
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 6,
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  _NutritionRow('Calories', '${foodItem.calories}', 'kcal'),
+                  const Divider(height: 24),
+                  _NutritionRow('Protein', '${foodItem.protein}', 'g'),
+                  const Divider(height: 24),
+                  _NutritionRow('Carbs', '${foodItem.carbs}', 'g'),
+                  const Divider(height: 24),
+                  _NutritionRow('Fats', '${foodItem.fats}', 'g'),
+                ],
+              ),
             ),
-            const SizedBox(height: 20),
-            NavigateButton(route: '/explore', text: 'Explore'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 6,
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.access_time, color: Colors.grey[600], size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Scanned on ${foodItem.dateScanned.day}/${foodItem.dateScanned.month}/${foodItem.dateScanned.year} at ${foodItem.dateScanned.hour}:${foodItem.dateScanned.minute.toString().padLeft(2, '0')}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            NavigateButton(route: '/explore', text: 'Explore More'),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _NutritionRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final String unit;
+
+  const _NutritionRow(this.label, this.value, this.unit);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        ),
+        Text(
+          '$value $unit',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -826,65 +772,26 @@ class NavigateButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () {
-        context.go(route);
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color.fromARGB(255, 99, 97, 97),
-      ),
-      child: Text(text),
-    );
-  }
-}
-
-class PieChartScreen extends StatelessWidget {
-  final Map<String, double> nutrition;
-
-  const PieChartScreen({super.key, required this.nutrition});
-
-  @override
-  Widget build(BuildContext context) {
-    final proteinCalories = (nutrition['protein'] ?? 0) * 4;
-    final carbCalories = (nutrition['carbs'] ?? 0) * 4;
-    final fatCalories = (nutrition['fats'] ?? 0) * 9;
-
-    final dataMap = <String, double>{
-      "Protein": proteinCalories,
-      "Carbohydrate": carbCalories,
-      "Fats": fatCalories,
-    };
-
-    final colorList = <Color>[
-      Colors.orange,
-      Colors.yellow,
-      Colors.green,
-    ];
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Calorie Breakdown Pie Chart'),
-      ),
-      body: Center(
-        child: PieChart(
-          dataMap: dataMap,
-          animationDuration: const Duration(milliseconds: 800),
-          chartRadius: MediaQuery.of(context).size.width / 1.5,
-          colorList: colorList,
-          chartType: ChartType.disc,
-          ringStrokeWidth: 32,
-          centerText: "Calories",
-          legendOptions: const LegendOptions(
-            showLegendsInRow: false,
-            legendPosition: LegendPosition.right,
-            showLegends: true,
-            legendShape: BoxShape.circle,
-            legendTextStyle: TextStyle(fontWeight: FontWeight.bold),
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () {
+          context.go(route);
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF8B5FBF),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          chartValuesOptions: const ChartValuesOptions(
-            showChartValuesInPercentage: true,
-            decimalPlaces: 1,
-            showChartValuesOutside: false,
+          elevation: 0,
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
