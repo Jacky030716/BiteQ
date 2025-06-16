@@ -253,33 +253,52 @@ class _ScannedItem extends StatelessWidget {
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              Wrap(
+                spacing: 20, // Space between items
+                runSpacing: 4, // Space between rows
                 children: [
-                  Icon(
-                    Icons.local_fire_department,
-                    size: 16,
-                    color: Colors.red,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.local_fire_department,
+                        size: 16,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        calories,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    calories,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.pets, size: 16, color: Colors.orange),
+                      const SizedBox(width: 4),
+                      Text(protein, style: const TextStyle(fontSize: 14)),
+                    ],
                   ),
-                  const SizedBox(width: 20),
-                  Icon(Icons.pets, size: 16, color: Colors.orange),
-                  const SizedBox(width: 4),
-                  Text(protein, style: const TextStyle(fontSize: 14)),
-                  const SizedBox(width: 20),
-                  Icon(Icons.local_pizza, size: 16, color: Colors.yellow),
-                  const SizedBox(width: 4),
-                  Text(carbs, style: const TextStyle(fontSize: 14)),
-                  const SizedBox(width: 20),
-                  Icon(Icons.local_drink, size: 16, color: Colors.green),
-                  const SizedBox(width: 4),
-                  Text(fats, style: const TextStyle(fontSize: 14)),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.local_pizza, size: 16, color: Colors.yellow),
+                      const SizedBox(width: 4),
+                      Text(carbs, style: const TextStyle(fontSize: 14)),
+                    ],
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.local_drink, size: 16, color: Colors.green),
+                      const SizedBox(width: 4),
+                      Text(fats, style: const TextStyle(fontSize: 14)),
+                    ],
+                  ),
                 ],
               ),
               const SizedBox(height: 4),

@@ -6,6 +6,7 @@ class MacroDonut extends StatelessWidget {
   final String percent;
   final Color color;
   final IconData icon;
+  final double progressValue; // New field for linear progress
 
   const MacroDonut({
     super.key,
@@ -14,11 +15,8 @@ class MacroDonut extends StatelessWidget {
     required this.percent,
     required this.color,
     required this.icon,
+    required this.progressValue, // Make sure to pass this
   });
-
-  double get progressValue {
-    return double.parse(percent.replaceAll('%', '')) / 100;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,11 +27,7 @@ class MacroDonut extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            Icon(
-              icon,
-              size: 16,
-              color: Colors.black87, // Modern semi-transparent icon
-            ),
+            Icon(icon, size: 16, color: Colors.black87),
             const SizedBox(width: 4),
             Text(
               label,
@@ -47,15 +41,17 @@ class MacroDonut extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         TweenAnimationBuilder<double>(
-          tween: Tween<double>(begin: 0, end: progressValue),
-          duration: const Duration(seconds: 1), // Animation duration
+          tween: Tween<double>(
+            begin: 0,
+            end: progressValue.clamp(0.0, 1.0),
+          ), // Clamp value
+          duration: const Duration(seconds: 1),
           builder: (context, value, child) {
             return SizedBox(
               width: 70,
               height: 6,
               child: LinearProgressIndicator(
                 value: value,
-                // strokeWidth: 6,
                 borderRadius: BorderRadius.circular(30),
                 backgroundColor: Colors.grey.shade300,
                 valueColor: AlwaysStoppedAnimation<Color>(color),
@@ -65,7 +61,12 @@ class MacroDonut extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          "$grams/200g",
+          // Display actual grams and assumed target
+          "$grams/${label == 'Protein'
+              ? '150g'
+              : label == 'Carbs'
+              ? '272g'
+              : '62g'}",
           style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
       ],

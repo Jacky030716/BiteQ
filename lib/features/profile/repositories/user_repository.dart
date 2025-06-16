@@ -45,6 +45,21 @@ class UserRepository {
     }
   }
 
+  Future<void> updateAiAnalysisNotes(String userId, String? notes) async {
+    try {
+      await usersCollection.doc(userId).set(
+        {'aiAnalysisNotes': notes},
+        SetOptions(merge: true), // Use merge to only update this field
+      );
+    } on FirebaseException catch (e) {
+      throw Exception(
+        'Firestore error updating AI analysis notes: ${e.message}',
+      );
+    } catch (e) {
+      throw Exception('Failed to update AI analysis notes: $e');
+    }
+  }
+
   // Optional: Method to update user profile
   Future<void> updateUserProfile(ProfileUser user) async {
     try {

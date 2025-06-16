@@ -3,12 +3,14 @@ class ProfileUser {
   final String name;
   final String? profileImageUrl;
   final SurveyResponses surveyResponses;
+  final String? aiAnalysisNotes;
 
   ProfileUser({
     required this.email,
     required this.name,
     this.profileImageUrl,
     required this.surveyResponses,
+    this.aiAnalysisNotes,
   });
 
   // Factory constructor for creating a ProfileUser from a Firestore DocumentSnapshot data map
@@ -35,6 +37,7 @@ class ProfileUser {
       surveyResponses: SurveyResponses.fromJson(
         actualSurveyData,
       ), // Pass the inner map
+      aiAnalysisNotes: json['aiAnalysisNotes'] as String?,
     );
   }
 
@@ -46,6 +49,7 @@ class ProfileUser {
       'profileImageUrl': profileImageUrl,
       // When saving, format survey_responses back to match the Firestore structure
       'survey_responses': {'0': surveyResponses.toJson()},
+      'aiAnalysisNotes': aiAnalysisNotes,
     };
   }
 }

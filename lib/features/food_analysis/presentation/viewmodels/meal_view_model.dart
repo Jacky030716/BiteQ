@@ -1,263 +1,78 @@
+import 'dart:io'; // Import File
 import 'package:biteq/features/food_analysis/data/repositories/meal_repositiory.dart';
 import 'package:biteq/features/food_analysis/domain/entities/food_item.dart';
 import 'package:biteq/features/food_analysis/domain/entities/meals.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
+import 'package:biteq/features/food_analysis/presentation/widgets/analyze_date_selection.dart';
 
 final mealViewModelProvider =
     StateNotifierProvider<MealViewModel, AsyncValue<List<Meal>>>((ref) {
-      return MealViewModel();
+      final selectedDate = ref.watch(selectedDateProvider);
+      return MealViewModel(ref, selectedDate);
     });
 
 class MealViewModel extends StateNotifier<AsyncValue<List<Meal>>> {
   final MealRepository _mealRepository = MealRepository();
+  final Ref _ref;
+  DateTime _currentSelectedDate;
 
-  MealViewModel() : super(const AsyncValue.loading()) {
+  MealViewModel(this._ref, this._currentSelectedDate)
+    : super(const AsyncValue.loading()) {
+    _ref.listen<DateTime>(selectedDateProvider, (previous, next) {
+      if (!isSameDay(previous, next)) {
+        _currentSelectedDate = next;
+        fetchMeals();
+      }
+    });
     _initializeData();
   }
 
-  // Initialize with mock data and load from repository
+  bool isSameDay(DateTime? date1, DateTime? date2) {
+    if (date1 == null || date2 == null) return false;
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
+  }
+
   Future<void> _initializeData() async {
     try {
-      // First, add mock data to repository if it doesn't exist
-      await _addMockDataIfNeeded();
-      // Then fetch meals from repository
       await fetchMeals();
     } catch (error) {
-      state = AsyncValue.error(error, StackTrace.current);
-    }
-  }
-
-  // Add mock data to repository if no meals exist
-  Future<void> _addMockDataIfNeeded() async {
-    try {
-      final existingMeals = await _mealRepository.getMeals();
-      if (existingMeals.isEmpty) {
-        final mockMeals = _getMockMeals();
-        for (var meal in mockMeals) {
-          await _mealRepository.addMeal(meal);
-        }
+      if (mounted) {
+        state = AsyncValue.error(error, StackTrace.current);
       }
-    } catch (error) {
-      // Log or handle the error, but don't blindly add mock data here if fetching failed.
-      // The assumption is that if getMeals() failed, adding mock data might also fail,
-      // or we might already be in a bad state.
-      // If mock data is absolutely critical even on fetch failure, then you could
-      // re-evaluate, but for now, we'll let fetchMeals() handle the primary error.
-      debugPrint('Error checking for existing meals: $error');
+      debugPrint('Error initializing MealViewModel: $error');
     }
   }
 
-  // Generate mock meals data
-  List<Meal> _getMockMeals() {
-    return [
-      Meal(
-        name: "Breakfast",
-        mealIcon: "assets/icons/breakfast.png",
-        time: "7:30 AM",
-        totalCals: "398 Cals",
-        foods: [
-          FoodItem(
-            name: "Oatmeal with Berries",
-            calories: "210 calories",
-            image: "",
-            time: "7:35 AM",
-          ),
-          FoodItem(
-            name: "Greek Yogurt",
-            calories: "138 calories",
-            image: "",
-            time: "7:40 AM",
-          ),
-          FoodItem(
-            name: "Fresh Orange Juice",
-            calories: "50 calories",
-            image: "",
-            time: "7:45 AM",
-          ),
-        ],
-      ),
-      Meal(
-        name: "Lunch",
-        mealIcon: "assets/icons/lunch.png",
-        time: "12:15 PM",
-        totalCals: "485 Cals",
-        foods: [
-          FoodItem(
-            name: "Grilled Chicken Breast",
-            calories: "250 calories",
-            image: "",
-            time: "12:20 PM",
-          ),
-          FoodItem(
-            name: "Brown Rice",
-            calories: "185 calories",
-            image: "",
-            time: "12:25 PM",
-          ),
-          FoodItem(
-            name: "Mixed Vegetables",
-            calories: "50 calories",
-            image: "",
-            time: "12:30 PM",
-          ),
-        ],
-      ),
-      Meal(
-        name: "Dinner",
-        mealIcon: "assets/icons/dinner.png",
-        time: "6:45 PM",
-        totalCals: "520 Cals",
-        foods: [
-          FoodItem(
-            name: "Grilled Salmon",
-            calories: "280 calories",
-            image: "",
-            time: "6:50 PM",
-          ),
-          FoodItem(
-            name: "Steamed Broccoli",
-            calories: "90 calories",
-            image: "",
-            time: "6:55 PM",
-          ),
-          FoodItem(
-            name: "Quinoa Salad",
-            calories: "150 calories",
-            image: "",
-            time: "7:00 PM",
-          ),
-        ],
-      ),
-      Meal(
-        name: "Snack",
-        mealIcon: "assets/icons/snack.png",
-        time: "3:30 PM",
-        totalCals: "180 Cals",
-        foods: [
-          FoodItem(
-            name: "Apple Slices",
-            calories: "80 calories",
-            image: "",
-            time: "3:35 PM",
-          ),
-          FoodItem(
-            name: "Almond Butter",
-            calories: "100 calories",
-            image: "",
-            time: "3:35 PM",
-          ),
-        ],
-      ),
-    ];
-  }
-
-  Future<void> addMockMeals() async {
-    final meals = <Meal>[
-      Meal(
-        name: 'Breakfast',
-        time: '07:30 AM',
-        mealIcon: '🍳',
-        totalCals: '',
-        foods: [
-          FoodItem(
-            name: 'Boiled Egg',
-            calories: '78 Cals',
-            image: '🥚',
-            time: '07:31 AM',
-          ),
-          FoodItem(
-            name: 'Toast',
-            calories: '120 Cals',
-            image: '🍞',
-            time: '07:32 AM',
-          ),
-          FoodItem(
-            name: 'Orange Juice',
-            calories: '150 Cals',
-            image: '🍊',
-            time: '07:33 AM',
-          ),
-        ],
-      ),
-      Meal(
-        name: 'Lunch',
-        time: '12:45 PM',
-        mealIcon: '🍱',
-        totalCals: '',
-        foods: [
-          FoodItem(
-            name: 'Rice',
-            calories: '200 Cals',
-            image: '🍚',
-            time: '12:46 PM',
-          ),
-          FoodItem(
-            name: 'Grilled Chicken',
-            calories: '250 Cals',
-            image: '🍗',
-            time: '12:47 PM',
-          ),
-          FoodItem(
-            name: 'Salad',
-            calories: '80 Cals',
-            image: '🥗',
-            time: '12:48 PM',
-          ),
-        ],
-      ),
-      Meal(
-        name: 'Dinner',
-        time: '07:00 PM',
-        mealIcon: '🍝',
-        totalCals: '',
-        foods: [
-          FoodItem(
-            name: 'Spaghetti',
-            calories: '300 Cals',
-            image: '🍝',
-            time: '07:01 PM',
-          ),
-          FoodItem(
-            name: 'Meatballs',
-            calories: '200 Cals',
-            image: '🥩',
-            time: '07:02 PM',
-          ),
-          FoodItem(
-            name: 'Watermelon',
-            calories: '50 Cals',
-            image: '🍉',
-            time: '07:03 PM',
-          ),
-        ],
-      ),
-    ];
-
-    for (var meal in meals) {
-      meal.updateTotalCalories(); // auto-calculate total
-      await _mealRepository.addMeal(meal);
-    }
-  }
-
-  // Fetch meals from repository
   Future<void> fetchMeals() async {
     try {
-      state = const AsyncValue.loading();
-      final meals = await _mealRepository.getMeals();
-      state = AsyncValue.data(meals);
+      if (mounted) {
+        // Ensure notifier is mounted before updating state
+        state = const AsyncValue.loading();
+      }
+      final allMeals = await _mealRepository.getMeals();
+      final filteredMeals =
+          allMeals
+              .where((meal) => isSameDay(meal.date, _currentSelectedDate))
+              .toList();
+      if (mounted) {
+        // Ensure notifier is mounted before updating state
+        state = AsyncValue.data(filteredMeals);
+      }
     } catch (error) {
-      state = AsyncValue.error(error, StackTrace.current);
+      if (mounted) {
+        state = AsyncValue.error(error, StackTrace.current);
+      }
+      debugPrint('Error fetching meals for date $_currentSelectedDate: $error');
     }
   }
 
   Future<void> addNewMeal(String mealType, String mealIcon, String time) async {
     try {
-      // Get current state
       final currentState = state;
       if (currentState is! AsyncData) return;
-
-      final currentMeals = currentState.value ?? [];
 
       final newMeal = Meal(
         name: mealType,
@@ -265,115 +80,152 @@ class MealViewModel extends StateNotifier<AsyncValue<List<Meal>>> {
         foods: [],
         time: time,
         totalCals: '0 Cals',
+        date: _currentSelectedDate,
       );
 
-      // Add to database (adjust according to your repository/service)
       await _mealRepository.addMeal(newMeal);
-
-      // Update state with new meal
-      final updatedMeals = [...currentMeals, newMeal];
-      state = AsyncData(updatedMeals);
+      await fetchMeals();
     } catch (error) {
-      // Handle error appropriately
-      state = AsyncError(error, StackTrace.current);
+      if (mounted) {
+        state = AsyncError(error, StackTrace.current);
+      }
       rethrow;
     }
   }
 
-  // Update an existing meal
   Future<void> updateMeal(Meal meal) async {
     try {
       await _mealRepository.updateMeal(meal);
-      await fetchMeals(); // Refresh the list
+      await fetchMeals();
     } catch (error) {
-      state = AsyncValue.error(error, StackTrace.current);
+      if (mounted) {
+        state = AsyncValue.error(error, StackTrace.current);
+      }
     }
   }
 
-  // Delete a meal
-  Future<void> deleteMeal(int mealIndex) async {
+  Future<void> deleteMeal(String mealName) async {
     try {
       final currentState = state;
       if (currentState is! AsyncData) return;
 
       final currentMeals = currentState.value ?? [];
+      final mealToDelete = currentMeals.firstWhere(
+        (meal) =>
+            meal.name == mealName && isSameDay(meal.date, _currentSelectedDate),
+        orElse:
+            () =>
+                throw Exception(
+                  'Meal not found for deletion on selected date.',
+                ),
+      );
 
-      if (mealIndex < 0 || mealIndex >= currentMeals.length) {
-        throw Exception('Invalid meal index');
-      }
-
-      final mealToDelete = currentMeals[mealIndex];
-
-      // Delete from database
-      await _mealRepository.deleteMeal(mealToDelete.name);
-
-      // Update state by removing the meal
-      final updatedMeals = List<Meal>.from(currentMeals);
-      updatedMeals.removeAt(mealIndex);
-
-      state = AsyncData(updatedMeals);
+      await _mealRepository.deleteMeal(
+        mealToDelete.name,
+      ); // Using meal.name as ID
+      await fetchMeals();
     } catch (error) {
-      state = AsyncError(error, StackTrace.current);
+      if (mounted) {
+        state = AsyncError(error, StackTrace.current);
+      }
       rethrow;
     }
   }
 
-  // Get meal by name
   Future<Meal?> getMealByName(String mealName) async {
-    try {
-      return await _mealRepository.getMealByName(mealName);
-    } catch (error) {
-      return null;
+    final currentState = state;
+    if (currentState is AsyncData<List<Meal>>) {
+      return currentState.value.firstWhere(
+        (meal) =>
+            meal.name == mealName && isSameDay(meal.date, _currentSelectedDate),
+        orElse: () => throw Exception('Meal not found for selected date'),
+      );
     }
+    return null;
   }
 
-  // Add a new food item to a meal
-  Future<void> addFoodItem(int mealIndex, FoodItem food) async {
+  // Modified: addFoodItem now accepts a File? for image upload and processes it
+  Future<void> addFoodItem(
+    String mealName,
+    FoodItem food,
+    File? imageFile,
+  ) async {
     final currentState = state;
     if (currentState is AsyncData<List<Meal>>) {
       try {
         final meals = [...currentState.value];
-        meals[mealIndex].foods.add(food);
+        final mealIndex = meals.indexWhere(
+          (meal) =>
+              meal.name == mealName &&
+              isSameDay(meal.date, _currentSelectedDate),
+        );
+        if (mealIndex == -1) {
+          throw Exception('Meal not found for selected date: $mealName');
+        }
+
+        // --- Image Upload Logic ---
+        String? imageUrl =
+            food.image; // Default to existing image (emoji or empty)
+        if (imageFile != null) {
+          imageUrl = await _mealRepository.uploadFoodImage(
+            imageFile,
+            mealName,
+            food.name,
+          );
+        }
+
+        final foodWithImageUrl = food.copyWith(image: imageUrl);
+
+        meals[mealIndex].foods.add(foodWithImageUrl);
         meals[mealIndex].updateTotalCalories();
 
-        // Update in repository
         await _mealRepository.updateMeal(meals[mealIndex]);
-
-        // Update local state
-        state = AsyncValue.data(meals);
+        await fetchMeals();
       } catch (error) {
-        state = AsyncValue.error(error, StackTrace.current);
-        // Refresh from repository on error
+        if (mounted) {
+          state = AsyncValue.error(error, StackTrace.current);
+        }
+        debugPrint('Error adding food item: $error');
         await fetchMeals();
       }
     }
   }
 
-  // Remove a food item from a meal
-  Future<void> removeFoodItem(int mealIndex, int foodIndex) async {
+  Future<void> removeFoodItem(String mealName, int foodIndex) async {
     final currentState = state;
     if (currentState is AsyncData<List<Meal>>) {
       try {
         final meals = [...currentState.value];
+        final mealIndex = meals.indexWhere(
+          (meal) =>
+              meal.name == mealName &&
+              isSameDay(meal.date, _currentSelectedDate),
+        );
+        if (mealIndex == -1) {
+          throw Exception('Meal not found for selected date: $mealName');
+        }
+
+        if (foodIndex < 0 || foodIndex >= meals[mealIndex].foods.length) {
+          throw Exception('Invalid food item index');
+        }
+
         meals[mealIndex].foods.removeAt(foodIndex);
         meals[mealIndex].updateTotalCalories();
 
-        // Update in repository
         await _mealRepository.updateMeal(meals[mealIndex]);
-
-        // Update local state
-        state = AsyncValue.data(meals);
+        await fetchMeals();
       } catch (error) {
-        state = AsyncValue.error(error, StackTrace.current);
-        // Refresh from repository on error
+        if (mounted) {
+          state = AsyncValue.error(error, StackTrace.current);
+        }
+        debugPrint('Error removing food item: $error');
         await fetchMeals();
       }
     }
   }
 
-  // Update an existing food item
   Future<void> updateFoodItem(
-    int mealIndex,
+    String mealName,
     int foodIndex,
     FoodItem updatedFood,
   ) async {
@@ -381,28 +233,38 @@ class MealViewModel extends StateNotifier<AsyncValue<List<Meal>>> {
     if (currentState is AsyncData<List<Meal>>) {
       try {
         final meals = [...currentState.value];
+        final mealIndex = meals.indexWhere(
+          (meal) =>
+              meal.name == mealName &&
+              isSameDay(meal.date, _currentSelectedDate),
+        );
+        if (mealIndex == -1) {
+          throw Exception('Meal not found for selected date: $mealName');
+        }
+
+        if (foodIndex < 0 || foodIndex >= meals[mealIndex].foods.length) {
+          throw Exception('Invalid food item index');
+        }
+
         meals[mealIndex].foods[foodIndex] = updatedFood;
         meals[mealIndex].updateTotalCalories();
 
-        // Update in repository
         await _mealRepository.updateMeal(meals[mealIndex]);
-
-        // Update local state
-        state = AsyncValue.data(meals);
+        await fetchMeals();
       } catch (error) {
-        state = AsyncValue.error(error, StackTrace.current);
-        // Refresh from repository on error
+        if (mounted) {
+          state = AsyncValue.error(error, StackTrace.current);
+        }
+        debugPrint('Error updating food item: $error');
         await fetchMeals();
       }
     }
   }
 
-  // Refresh meals from repository
   Future<void> refresh() async {
     await fetchMeals();
   }
 
-  // Get color for a meal type
   Color getMealColor(String mealName) {
     switch (mealName.toLowerCase()) {
       case "breakfast":
@@ -418,7 +280,6 @@ class MealViewModel extends StateNotifier<AsyncValue<List<Meal>>> {
     }
   }
 
-  // Get total daily calories
   int getTotalDailyCalories() {
     final currentState = state;
     if (currentState is AsyncData<List<Meal>>) {
@@ -432,7 +293,45 @@ class MealViewModel extends StateNotifier<AsyncValue<List<Meal>>> {
     return 0;
   }
 
-  // Get meals count
+  int getProteinGrams() {
+    final currentState = state;
+    if (currentState is AsyncData<List<Meal>>) {
+      return currentState.value.fold(0, (total, meal) {
+        return total +
+            meal.foods.fold(0, (mealTotal, food) {
+              return mealTotal + (food.protein ?? 0);
+            });
+      });
+    }
+    return 0;
+  }
+
+  int getCarbsGrams() {
+    final currentState = state;
+    if (currentState is AsyncData<List<Meal>>) {
+      return currentState.value.fold(0, (total, meal) {
+        return total +
+            meal.foods.fold(0, (mealTotal, food) {
+              return mealTotal + (food.carbs ?? 0);
+            });
+      });
+    }
+    return 0;
+  }
+
+  int getFatGrams() {
+    final currentState = state;
+    if (currentState is AsyncData<List<Meal>>) {
+      return currentState.value.fold(0, (total, meal) {
+        return total +
+            meal.foods.fold(0, (mealTotal, food) {
+              return mealTotal + (food.fat ?? 0);
+            });
+      });
+    }
+    return 0;
+  }
+
   int getMealsCount() {
     final currentState = state;
     if (currentState is AsyncData<List<Meal>>) {

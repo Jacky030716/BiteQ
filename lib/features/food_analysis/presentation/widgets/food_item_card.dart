@@ -74,13 +74,34 @@ class FoodItemCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10.5),
-        child: Image.asset(
-          "assets/images/curry_rice.png",
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return _buildFoodPlaceholder();
-          },
-        ),
+        child:
+            food.image != null && food.image!.isNotEmpty
+                ? Image.network(
+                  food.image!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return _buildFoodPlaceholder();
+                  },
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(
+                      child: CircularProgressIndicator(
+                        value:
+                            loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    (loadingProgress.expectedTotalBytes ?? 1)
+                                : null,
+                      ),
+                    );
+                  },
+                )
+                : Image.asset(
+                  "assets/images/curry_rice.png", // Default image
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return _buildFoodPlaceholder();
+                  },
+                ),
       ),
     );
   }

@@ -3,23 +3,24 @@ class FoodItem {
   String calories;
   String image;
   String time;
+  int? protein; // ADDED: Protein in grams
+  int? carbs; // ADDED: Carbohydrates in grams
+  int? fat; // ADDED: Fat in grams
 
   FoodItem({
     required this.name,
     required this.calories,
     required this.image,
     required this.time,
+    this.protein, // Make these optional in constructor
+    this.carbs,
+    this.fat,
   });
 
-  // Get numeric value of calories
+  // Helper to parse calories string to int
   int get caloriesValue {
-    // Extract numeric value from calories string
-    RegExp regExp = RegExp(r'\d+');
-    Match? match = regExp.firstMatch(calories);
-    if (match != null) {
-      return int.parse(match.group(0)!);
-    }
-    return 0;
+    final caloriesString = calories.replaceAll(RegExp(r'[^0-9]'), '');
+    return int.tryParse(caloriesString) ?? 0;
   }
 
   // Set calories with proper formatting
@@ -34,12 +35,23 @@ class FoodItem {
       calories: json['calories'] ?? '0 calories',
       image: json['image'] ?? '',
       time: json['time'] ?? '',
+      protein: json['protein'] as int?, // Parse protein
+      carbs: json['carbs'] as int?, // Parse carbs
+      fat: json['fat'] as int?, // Parse fat
     );
   }
 
   // Convert to json
   Map<String, dynamic> toJson() {
-    return {'name': name, 'calories': calories, 'image': image, 'time': time};
+    return {
+      'name': name,
+      'calories': calories,
+      'image': image,
+      'time': time,
+      'protein': protein, // Include protein
+      'carbs': carbs, // Include carbs
+      'fat': fat, // Include fat
+    };
   }
 
   // Copy with method for easy updates
@@ -48,19 +60,25 @@ class FoodItem {
     String? calories,
     String? image,
     String? time,
+    int? protein,
+    int? carbs,
+    int? fat,
   }) {
     return FoodItem(
       name: name ?? this.name,
       calories: calories ?? this.calories,
       image: image ?? this.image,
       time: time ?? this.time,
+      protein: protein ?? this.protein,
+      carbs: carbs ?? this.carbs,
+      fat: fat ?? this.fat,
     );
   }
 
   // Override toString for debugging
   @override
   String toString() {
-    return 'FoodItem(name: $name, calories: $calories, image: $image, time: $time)';
+    return 'FoodItem(name: $name, calories: $calories, image: $image, time: $time, protein: $protein, carbs: $carbs, fat: $fat)';
   }
 
   // Override equality operators
@@ -71,11 +89,20 @@ class FoodItem {
         other.name == name &&
         other.calories == calories &&
         other.image == image &&
-        other.time == time;
+        other.time == time &&
+        other.protein == protein &&
+        other.carbs == carbs &&
+        other.fat == fat;
   }
 
   @override
   int get hashCode {
-    return name.hashCode ^ calories.hashCode ^ image.hashCode ^ time.hashCode;
+    return name.hashCode ^
+        calories.hashCode ^
+        image.hashCode ^
+        time.hashCode ^
+        protein.hashCode ^
+        carbs.hashCode ^
+        fat.hashCode;
   }
 }

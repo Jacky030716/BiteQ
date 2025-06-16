@@ -166,15 +166,7 @@ class MealItem extends ConsumerWidget {
           ),
         ],
       ),
-      child:
-          meal.mealIcon.isNotEmpty
-              ? Center(
-                child: Text(
-                  meal.mealIcon,
-                  style: const TextStyle(fontSize: 20),
-                ),
-              )
-              : _buildDefaultMealIcon(),
+      child: _buildDefaultMealIcon(),
     );
   }
 
@@ -318,7 +310,7 @@ class MealItem extends ConsumerWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                "Add food item",
+                "Add Food",
                 style: TextStyle(
                   color: Colors.blue.shade700,
                   fontWeight: FontWeight.w700,

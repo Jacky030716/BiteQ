@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart'; // For date formatting
 
-class AnalyzeDateSelection extends StatelessWidget {
+final selectedDateProvider = StateProvider<DateTime>((ref) {
+  return DateTime.now();
+});
+
+class AnalyzeDateSelection extends ConsumerWidget {
   const AnalyzeDateSelection({super.key});
 
+  // Helper to get abbreviated weekday name
   String _getWeekdayAbbr(DateTime date) {
-    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return weekdays[date.weekday - 1];
+    return DateFormat('EEE').format(date); // e.g., 'Mon', 'Tue'
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedDate = ref.watch(selectedDateProvider);
+
     return Container(
       width: double.infinity,
       height: 80,
@@ -19,18 +27,32 @@ class AnalyzeDateSelection extends StatelessWidget {
         child: Row(
           children: List.generate(7, (index) {
             final today = DateTime.now();
-            final date = today.subtract(Duration(days: 6 - index));
-            final isSelected = index == 6; // Highlight today by default
+            // Generate dates for the last 7 days, including today
+            final date = DateTime(
+              today.year,
+              today.month,
+              today.day,
+            ).subtract(Duration(days: 6 - index));
+
+            // Determine if this date is currently selected
+            final isSelected =
+                selectedDate.year == date.year &&
+                selectedDate.month == date.month &&
+                selectedDate.day == date.day;
 
             return GestureDetector(
               onTap: () {
-                // Handle date selection
+                // Update the selectedDateProvider when a date is tapped
+                ref.read(selectedDateProvider.notifier).state = date;
               },
               child: Container(
                 width: 50,
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.white : Colors.white,
+                  color:
+                      isSelected
+                          ? Colors.blue.shade50
+                          : Colors.white, // Lighter blue when selected
                   borderRadius: BorderRadius.circular(32),
                   border: Border.all(
                     color: isSelected ? Colors.blue : Colors.grey.shade300,
