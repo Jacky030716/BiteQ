@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:biteq/features/home_dashboard/presentation/pages/home_screen.dart'; // Import the file where ChartData is defined
+import 'package:biteq/features/home_dashboard/models/chart_data.dart';
 
 class CalorieBarChart extends StatelessWidget {
   final List<ChartData> chartData;
