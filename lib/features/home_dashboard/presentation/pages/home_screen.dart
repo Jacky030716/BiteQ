@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:biteq/features/auth/presentation/viewmodel/sign_out_view_model.dart';
+
 import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:biteq/features/home_dashboard/presentation/widgets/chart.dart';
@@ -58,7 +58,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final signOutViewModel = ref.watch(signOutViewModelProvider.notifier);
+    
     final foodItemsAsync = ref.watch(foodItemsProvider);
     final chartDataAsync = ref.watch(chartDataProvider);
     final todayNutritionAsync = ref.watch(todayNutritionProvider);
@@ -93,14 +93,6 @@ class HomeScreen extends ConsumerWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.exit_to_app, color: Colors.black),
-            onPressed: () {
-              signOutViewModel.signOut(() => context.go('/sign-in'), ref);
-            },
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
