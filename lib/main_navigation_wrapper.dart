@@ -1,4 +1,5 @@
 import 'package:biteq/features/ai_detection/presentation/pages/ai_detection_mobile.dart';
+import 'package:biteq/features/posting/explore_page.dart';
 import 'package:biteq/features/profile/presentation/user_profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,7 +28,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> {
     super.initState();
     _screens = [
       const HomeScreen(), // Index 0 - Home
-      const FoodAnalysisPage(), // Index 1 - Meals
+      const ExplorePage(), // Index 1 - Meals
       const ImagePickerPage(), // Index 2 - Camera
       const FoodAnalysisPage(), // Index 3 - Analysis
       const UserProfileScreen(), // Index 4 - Profile
@@ -45,14 +46,9 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> {
   }
 
   void _handleCameraAction() {
-    // Option 1: Navigate to camera screen
     setState(() {
       _currentIndex = 2;
     });
-
-    // Option 2: Or open camera directly without changing tab
-    // You can implement camera functionality here
-    // For example: open image picker, camera, etc.
   }
 
   @override
@@ -132,7 +128,7 @@ class _MainNavigationWrapperWithPageViewState
         },
         children: const [
           HomeScreen(),
-          FoodAnalysisPage(),
+          ExplorePage(),
           ImagePickerPage(),
           FoodAnalysisPage(),
           UserProfileScreen(),
