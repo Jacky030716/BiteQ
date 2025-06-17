@@ -36,7 +36,6 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> {
 
   void _onNavBarTap(int index) {
     if (index == 2) {
-      // Handle camera separately if needed (e.g., open camera directly)
       _handleCameraAction();
     } else {
       setState(() {
