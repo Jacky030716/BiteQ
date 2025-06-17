@@ -16,6 +16,7 @@ class FoodServiceHelpers {
     return 0.0;
   }
 
+
   // Parse time string to DateTime
   DateTime? parseDateFromTimeString(String? timeString) {
     if (timeString == null) return null;

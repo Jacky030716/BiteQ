@@ -150,31 +150,54 @@ class FoodService {
   }
 
   // Get total nutrition for today
-  Future<Map<String, double>> getTodayNutrition() async {
-    final today = DateTime.now();
-    final todayItems = _foodItems.where((item) =>
-      item.dateScanned.day == today.day &&
-      item.dateScanned.month == today.month &&
-      item.dateScanned.year == today.year
-    ).toList();
+Future<Map<String, double>> getTodayNutrition() async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return {};
 
-    double totalCalories = 0;
-    double totalProtein = 0;
-    double totalCarbs = 0;
-    double totalFats = 0;
+  final uid = user.uid;
+  final now = DateTime.now();
+  final todayKey = "${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
 
-    for (final item in todayItems) {
-      totalCalories += item.calories;
-      totalProtein += item.protein;
-      totalCarbs += item.carbs;
-      totalFats += item.fats;
+  final mealTypesSnapshot = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(uid)
+      .collection('meals_by_date')
+      .doc(todayKey)
+      .collection('mealTypes')
+      .get();
+
+  double totalCalories = 0;
+  double totalProtein = 0;
+  double totalCarbs = 0;
+  double totalFats = 0;
+
+  for (var doc in mealTypesSnapshot.docs) {
+    final data = doc.data();
+    final List<dynamic> foods = data['foods'] ?? [];
+
+    for (var food in foods) {
+      // Handle both string ("450 calories") and numeric inputs
+      String calStr = (food['calories'] ?? '').toString();
+      double cal = 0;
+      if (calStr.contains('calories')) {
+        cal = double.tryParse(calStr.split(' ').first) ?? 0;
+      } else {
+        cal = double.tryParse(calStr) ?? 0;
+      }
+
+      totalCalories += cal;
+      totalProtein += _helpers.parseToDouble(food['protein']);
+      totalCarbs += _helpers.parseToDouble(food['carbs']);
+      totalFats += _helpers.parseToDouble(food['fat']);
     }
-
-    return {
-      'calories': totalCalories,
-      'protein': totalProtein,
-      'carbs': totalCarbs,
-      'fats': totalFats,
-    };
   }
+
+  return {
+    'calories': totalCalories,
+    'protein': totalProtein,
+    'carbs': totalCarbs,
+    'fats': totalFats,
+  };
+}
+
 }
