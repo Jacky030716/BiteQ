@@ -1,220 +1,278 @@
 import 'dart:io'; // Import for File
 import 'package:biteq/features/food_analysis/domain/entities/meals.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // New: For user authentication
 import 'package:firebase_storage/firebase_storage.dart'; // Import Firebase Storage
+import 'package:biteq/features/food_analysis/domain/entities/food_item.dart'; // Ensure FoodItem is imported
 
 class MealRepository {
-  final CollectionReference mealsCollection = FirebaseFirestore.instance
-      .collection('meals');
-  final FirebaseStorage _storage =
-      FirebaseStorage.instance; // Initialize Firebase Storage
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  // Add a new meal
-  Future<void> addMeal(Meal meal) async {
+  // Helper to get the current authenticated user's ID
+  String? get _currentUserId => _auth.currentUser?.uid;
+
+  // Helper to format DateTime objects into a consistent string for Firestore document IDs (e.g., "YYYY-MM-DD")
+  String _formatDateForFirestore(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  // Fetches the suggested macronutrient values for the current user.
+  Future<Map<String, int>> getUserMacroRecommendations() async {
+    final userId = _currentUserId;
+    if (userId == null) {
+      throw Exception(
+        'User not authenticated. Cannot fetch macro recommendations.',
+      );
+    }
+
     try {
-      // Using meal.name as doc ID as per your existing structure
-      await mealsCollection.doc(meal.name).set(meal.toJson());
-      // Explicitly set meal.id to meal.name for consistency within the app if using name as ID
-      meal.id = meal.name;
+      final docSnapshot =
+          await _firestore.collection('users').doc(userId).get();
+      if (docSnapshot.exists) {
+        final data = docSnapshot.data();
+        return {
+          'recommendedProtein': data?['recommendedProtein'] as int? ?? 0,
+          'recommendedCarbs': data?['recommendedCarbs'] as int? ?? 0,
+          'recommendedFat': data?['recommendedFat'] as int? ?? 0,
+          'recommendedCalories': data?['recommendedCalories'] as int? ?? 0,
+        };
+      } else {
+        // If user profile doesn't exist, return default zeros
+        print(
+          'User profile not found for UID: $userId. Returning default macro recommendations.',
+        );
+        return {
+          'recommendedProtein': 0,
+          'recommendedCarbs': 0,
+          'recommendedFat': 0,
+          'recommendedCalories': 0,
+        };
+      }
+    } on FirebaseException catch (e) {
+      print('Firebase Error fetching user macro recommendations: ${e.message}');
+      rethrow; // Re-throw Firebase exceptions
+    } catch (e) {
+      print('General Error fetching user macro recommendations: $e');
+      rethrow; // Re-throw any other exceptions
+    }
+  }
+
+  /// Fetches all meals for a specific date for the current user.
+  /// The data is structured as: `users/{userId}/meals_by_date/{YYYY-MM-DD}/mealTypes/{mealName}`
+  /// Throws an [Exception] if the user is not authenticated.
+  Future<List<Meal>> getMealsForDate(DateTime date) async {
+    // Ensure user is authenticated before attempting to fetch data
+    if (_currentUserId == null) {
+      throw Exception('User not authenticated. Cannot fetch meals.');
+    }
+
+    final dateId = _formatDateForFirestore(
+      date,
+    ); // Get the date string for the document ID
+    try {
+      // Reference to the mealTypes subcollection for the specific user and date
+      final mealsCollectionRef = _firestore
+          .collection('users')
+          .doc(_currentUserId) // User-specific document
+          .collection('meals_by_date') // Collection for daily meals
+          .doc(dateId) // Document for the specific date
+          .collection('mealTypes');
+
+      final querySnapshot = await mealsCollectionRef.get();
+
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        final List<FoodItem> foods =
+            (data['foods'] as List<dynamic>?)
+                ?.map(
+                  (foodJson) =>
+                      FoodItem.fromJson(foodJson as Map<String, dynamic>),
+                )
+                .toList() ??
+            [];
+        return Meal(
+          id: doc.id, // The document ID here is the meal name (e.g., "Breakfast")
+          name: data['name'] as String,
+          mealIcon: data['mealIcon'] as String? ?? '',
+          foods: foods,
+          time: data['time'] as String? ?? '', // Ensure time field is parsed
+          totalCals: data['totalCals'] as String? ?? '0 kcal',
+          date: date, // Assign the date parameter to the Meal object
+        );
+      }).toList();
+    } on FirebaseException catch (e) {
+      // Handle known Firebase errors
+      throw _handleFirebaseException(e);
+    } catch (e) {
+      // Handle any other unexpected errors
+      print('Error getting meals for date $dateId: $e');
+      throw Exception('Failed to get meals for date $dateId: $e');
+    }
+  }
+
+  /// Adds a new meal type for a specific date. If the meal type already exists for the date,
+  /// it will be merged (updated) with the new data.
+  /// The meal's `name` property is used as the document ID within the `mealTypes` subcollection.
+  /// Throws an [Exception] if the user is not authenticated.
+  Future<void> addMeal(Meal meal) async {
+    // Ensure user is authenticated
+    if (_currentUserId == null) {
+      throw Exception('User not authenticated. Cannot add meal.');
+    }
+
+    final dateId = _formatDateForFirestore(
+      meal.date,
+    ); // Get date string for path
+    try {
+      // Reference to the specific meal type document for the user and date
+      final mealDocRef = _firestore
+          .collection('users')
+          .doc(_currentUserId)
+          .collection('meals_by_date')
+          .doc(dateId)
+          .collection('mealTypes')
+          .doc(meal.name); // Document ID is the meal name (e.g., "Breakfast")
+
+      // Use `set` with `SetOptions(merge: true)` to either create the document
+      // or update it if it already exists without overwriting other fields.
+      await mealDocRef.set(meal.toJson(), SetOptions(merge: true));
     } on FirebaseException catch (e) {
       throw _handleFirebaseException(e);
     } catch (e) {
+      print('Error adding meal type ${meal.name} for date $dateId: $e');
       throw Exception('Failed to add meal: $e');
     }
   }
 
-  // Get all meals
-  Future<List<Meal>> getMeals() async {
-    try {
-      final snapshot = await mealsCollection.get();
-      return snapshot.docs
-          .map((doc) {
-            try {
-              // Ensure 'id' is set from doc.id, which corresponds to meal.name in your setup
-              final data = doc.data() as Map<String, dynamic>;
-              data['id'] = doc.id; // doc.id will be the meal.name here
-              return Meal.fromJson(data);
-            } catch (e) {
-              // Log the error but continue with other meals
-              print('Error parsing meal ${doc.id}: $e');
-              return null;
-            }
-          })
-          .where((meal) => meal != null)
-          .cast<Meal>()
-          .toList();
-    } on FirebaseException catch (e) {
-      throw _handleFirebaseException(e);
-    } catch (e) {
-      throw Exception('Failed to fetch meals: $e');
-    }
-  }
-
-  // Update an existing meal
+  /// Updates an existing meal document, including its food items, total calories, and time.
+  /// Throws an [Exception] if the user is not authenticated or the meal cannot be found.
   Future<void> updateMeal(Meal meal) async {
-    // Ensure meal.name is not null for document reference
+    // Ensure user is authenticated
+    if (_currentUserId == null) {
+      throw Exception('User not authenticated. Cannot update meal.');
+    }
+
+    // Ensure meal name is not empty as it's used for the document ID
     if (meal.name.isEmpty) {
       throw Exception('Meal name cannot be empty for updating.');
     }
+
+    final dateId = _formatDateForFirestore(
+      meal.date,
+    ); // Get date string for path
     try {
-      // Using meal.name as doc ID for update
-      await mealsCollection.doc(meal.name).update(meal.toJson());
+      // Reference to the specific meal type document for the user and date
+      final mealDocRef = _firestore
+          .collection('users')
+          .doc(_currentUserId)
+          .collection('meals_by_date')
+          .doc(dateId)
+          .collection('mealTypes')
+          .doc(meal.name);
+
+      // Update specific fields of the meal document
+      await mealDocRef.update({
+        'foods':
+            meal.foods
+                .map((f) => f.toJson())
+                .toList(), // Update the list of foods
+        'totalCals': meal.totalCals, // Update total calories
+        'time': meal.time, // Update time
+      });
     } on FirebaseException catch (e) {
+      // If the document doesn't exist, it implies a logic error or a race condition.
+      // Firebase `update` method requires the document to exist.
       if (e.code == 'not-found') {
-        // If meal doesn't exist, create it (as per your original logic)
-        await addMeal(meal);
-      } else {
-        throw _handleFirebaseException(e);
+        // Option: if you want to create it if not found, use addMeal(meal) here instead
+        throw Exception(
+          'Meal document not found for update: ${meal.name} on $dateId',
+        );
       }
+      throw _handleFirebaseException(e);
     } catch (e) {
+      print('Error updating meal ${meal.name} for date $dateId: $e');
       throw Exception('Failed to update meal: $e');
     }
   }
 
-  // Delete a meal
-  Future<void> deleteMeal(String mealName) async {
+  /// Deletes a specific meal type document for a given date for the current user.
+  /// Throws an [Exception] if the user is not authenticated.
+  Future<void> deleteMeal(String mealName, DateTime date) async {
+    // Ensure user is authenticated
+    if (_currentUserId == null) {
+      throw Exception('User not authenticated. Cannot delete meal.');
+    }
+
+    final dateId = _formatDateForFirestore(date); // Get date string for path
     try {
-      await mealsCollection.doc(mealName).delete();
+      // Reference to the specific meal type document to be deleted
+      final mealDocRef = _firestore
+          .collection('users')
+          .doc(_currentUserId)
+          .collection('meals_by_date')
+          .doc(dateId)
+          .collection('mealTypes')
+          .doc(mealName);
+
+      await mealDocRef.delete();
     } on FirebaseException catch (e) {
       throw _handleFirebaseException(e);
     } catch (e) {
+      print('Error deleting meal ${mealName} for date $dateId: $e');
       throw Exception('Failed to delete meal: $e');
     }
   }
 
-  // Get a specific meal by name
-  Future<Meal?> getMealByName(String mealName) async {
-    try {
-      final doc = await mealsCollection.doc(mealName).get();
-      if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>;
-        data['id'] = doc.id; // doc.id will be the meal.name here
-        return Meal.fromJson(data);
-      }
-      return null;
-    } on FirebaseException catch (e) {
-      throw _handleFirebaseException(e);
-    } catch (e) {
-      throw Exception('Failed to fetch meal: $e');
-    }
-  }
-
-  // Check if a meal exists
-  Future<bool> mealExists(String mealName) async {
-    try {
-      final doc = await mealsCollection.doc(mealName).get();
-      return doc.exists;
-    } on FirebaseException catch (e) {
-      throw _handleFirebaseException(e);
-    } catch (e) {
-      throw Exception('Failed to check meal existence: $e');
-    }
-  }
-
-  // Get meals by time range (if you want to filter by day/week)
-  Future<List<Meal>> getMealsByTimeRange(
-    DateTime startTime,
-    DateTime endTime,
-  ) async {
-    try {
-      // This would require storing timestamps in your meals
-      // For now, we'll just return all meals
-      return await getMeals();
-    } on FirebaseException catch (e) {
-      throw _handleFirebaseException(e);
-    } catch (e) {
-      throw Exception('Failed to fetch meals by time range: $e');
-    }
-  }
-
-  // Delete all meals (useful for testing or reset functionality)
-  Future<void> deleteAllMeals() async {
-    try {
-      final snapshot = await mealsCollection.get();
-      final batch = FirebaseFirestore.instance.batch();
-
-      for (var doc in snapshot.docs) {
-        batch.delete(doc.reference);
-      }
-
-      await batch.commit();
-    } on FirebaseException catch (e) {
-      throw _handleFirebaseException(e);
-    } catch (e) {
-      throw Exception('Failed to delete all meals: $e');
-    }
-  }
-
-  // Get meals count
-  Future<int> getMealsCount() async {
-    try {
-      final snapshot = await mealsCollection.get();
-      return snapshot.docs.length;
-    } on FirebaseException catch (e) {
-      throw _handleFirebaseException(e);
-    } catch (e) {
-      throw Exception('Failed to get meals count: $e');
-    }
-  }
-
-  // Listen to meals changes (real-time updates)
-  Stream<List<Meal>> watchMeals() {
-    return mealsCollection.snapshots().map((snapshot) {
-      return snapshot.docs
-          .map((doc) {
-            try {
-              final data = doc.data() as Map<String, dynamic>;
-              data['id'] = doc.id;
-              return Meal.fromJson(data);
-            } catch (e) {
-              print('Error parsing meal ${doc.id}: $e');
-              return null;
-            }
-          })
-          .where((meal) => meal != null)
-          .cast<Meal>()
-          .toList();
-    });
-  }
-
-  // New method: Uploads an image to Firebase Storage and returns its download URL
-  // Uses mealName directly in the path as it's the Firestore document ID
+  /// Uploads a food image to Firebase Storage for the current user, organized by date and meal name.
+  /// Returns the download URL of the uploaded image.
+  /// Throws an [Exception] if the user is not authenticated or if upload fails.
   Future<String> uploadFoodImage(
     File imageFile,
     String mealName,
     String foodName,
   ) async {
-    try {
-      // Ensure mealName is valid for the path
-      if (mealName.isEmpty) {
-        throw Exception("Meal name cannot be empty for image upload path.");
-      }
+    // Ensure user is authenticated
+    if (_currentUserId == null) {
+      throw Exception('User not authenticated for image upload.');
+    }
 
-      // Create a unique file name using food name and timestamp
+    // Ensure mealName is valid for the storage path
+    if (mealName.isEmpty) {
+      throw Exception("Meal name cannot be empty for image upload path.");
+    }
+
+    try {
+      // Create a unique file name using current timestamp and cleaned food name
       final String fileName =
           '${foodName.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      // Path: food_images/{mealName (which is the doc ID)}/{generated_filename}.jpg
+
+      // Define the storage path: user_food_images/{userId}/{YYYY-MM-DD}/{mealName}/{fileName}
       final Reference storageRef = _storage
           .ref()
-          .child('food_images')
-          .child(mealName)
-          .child(fileName);
+          .child(
+            'user_food_images',
+          ) // Top-level folder for all user food images
+          .child(_currentUserId!) // User-specific folder
+          .child(
+            _formatDateForFirestore(DateTime.now()),
+          ) // Subfolder for the current date of upload
+          .child(mealName) // Subfolder for the meal type
+          .child(fileName); // The actual image file name
 
       final UploadTask uploadTask = storageRef.putFile(imageFile);
       final TaskSnapshot snapshot = await uploadTask;
       final String downloadUrl = await snapshot.ref.getDownloadURL();
-      print('Image uploaded to Firebase Storage: $downloadUrl');
       return downloadUrl;
     } on FirebaseException catch (e) {
-      print('Firebase Storage error uploading image: ${e.message}');
       throw Exception('Failed to upload image: ${e.message}');
     } catch (e) {
-      print('Error uploading image: $e');
       rethrow;
     }
   }
 
-  // Handle Firebase exceptions with user-friendly messages
+  // Handles common Firebase exceptions and returns a more user-friendly [Exception].
   Exception _handleFirebaseException(FirebaseException e) {
     switch (e.code) {
       case 'permission-denied':
@@ -228,15 +286,15 @@ class MealRepository {
       case 'not-found':
         return Exception('Document not found in Firestore.');
       case 'already-exists':
-        return Exception(
-          'Document already exists (likely due to meal name duplication).',
-        );
+        return Exception('Document already exists.');
       case 'network-request-failed':
         return Exception(
           'Network error. Please check your internet connection.',
         );
       case 'invalid-argument':
         return Exception('Invalid data provided: ${e.message}');
+      case 'unauthenticated':
+        return Exception('You are not authenticated. Please log in.');
       default:
         return Exception('An unexpected Firebase error occurred: ${e.message}');
     }

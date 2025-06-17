@@ -3,16 +3,16 @@ class FoodItem {
   String calories;
   String image;
   String time;
-  int? protein; // ADDED: Protein in grams
-  int? carbs; // ADDED: Carbohydrates in grams
-  int? fat; // ADDED: Fat in grams
+  int? protein;
+  int? carbs;
+  int? fat;
 
   FoodItem({
     required this.name,
     required this.calories,
     required this.image,
     required this.time,
-    this.protein, // Make these optional in constructor
+    this.protein,
     this.carbs,
     this.fat,
   });

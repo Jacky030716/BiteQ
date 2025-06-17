@@ -3,6 +3,7 @@ import 'package:biteq/features/food_analysis/presentation/viewmodels/meal_view_m
 import 'package:biteq/features/food_analysis/presentation/widgets/analyze_date_selection.dart';
 import 'package:biteq/features/food_analysis/presentation/widgets/meal_list.dart';
 import 'package:biteq/features/food_analysis/presentation/widgets/meal_summary.dart';
+import 'package:biteq/features/food_analysis/presentation/widgets/no_meals_found_card.dart'; // NEW IMPORT
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -127,49 +128,9 @@ class _FoodAnalysisPageState extends ConsumerState<FoodAnalysisPage> {
                   data: (meals) {
                     // Check if there are no meals for the selected date
                     if (meals.isEmpty) {
-                      return Container(
-                        margin: const EdgeInsets.symmetric(vertical: 20),
-                        padding: const EdgeInsets.all(32),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.restaurant_menu,
-                              color: Colors.blue.shade200,
-                              size: 64,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No meals found',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Add your first meal to get started for this date',
-                              style: TextStyle(color: Colors.black54),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      );
+                      return const NoMealsFoundCard(); // Use the new widget here
                     }
 
-                    // If data is available, display the meal summary and list
                     return Column(
                       children: [
                         MealSummary(), // Pass meals directly

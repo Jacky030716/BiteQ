@@ -1,9 +1,15 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class ProfileUser {
   final String email;
   final String name;
   final String? profileImageUrl;
   final SurveyResponses surveyResponses;
-  final String? aiAnalysisNotes;
+  final String? aiAnalysisNotes; // AI generated analysis notes
+  final int? recommendedProtein; // New: Recommended daily protein in grams
+  final int? recommendedCarbs; // New: Recommended daily carbohydrates in grams
+  final int? recommendedFat; // New: Recommended daily fat in grams
+  final int? recommendedCalories; // New: Recommended daily total calories
 
   ProfileUser({
     required this.email,
@@ -11,46 +17,91 @@ class ProfileUser {
     this.profileImageUrl,
     required this.surveyResponses,
     this.aiAnalysisNotes,
+    this.recommendedProtein,
+    this.recommendedCarbs,
+    this.recommendedFat,
+    this.recommendedCalories,
   });
 
-  // Factory constructor for creating a ProfileUser from a Firestore DocumentSnapshot data map
-  factory ProfileUser.fromJson(Map<String, dynamic> json) {
-    // Safely get profileImageUrl, it might be null or not exist
-    final String? imageUrl = json['profileImageUrl'] as String?;
+  factory ProfileUser.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> snapshot,
+    SnapshotOptions? options,
+  ) {
+    final data = snapshot.data();
 
-    final List<dynamic>? surveyResponsesList =
-        json['survey_responses'] as List<dynamic>?;
+    // Handle survey_responses field which might be stored as a List or a Map
+    Map<String, dynamic> surveyDataMap = {};
+    final dynamic surveyResponsesRaw = data?['survey_responses'];
 
-    Map<String, dynamic> actualSurveyData = {};
-    if (surveyResponsesList != null && surveyResponsesList.isNotEmpty) {
-      actualSurveyData = surveyResponsesList[0] as Map<String, dynamic>;
+    if (surveyResponsesRaw is Map<String, dynamic>) {
+      surveyDataMap = surveyResponsesRaw;
+    } else if (surveyResponsesRaw is List<dynamic> &&
+        surveyResponsesRaw.isNotEmpty) {
+      if (surveyResponsesRaw[0] is Map<String, dynamic>) {
+        surveyDataMap = surveyResponsesRaw[0] as Map<String, dynamic>;
+      } else {
+        surveyDataMap = {}; // Fallback to an empty map
+      }
+    } else if (surveyResponsesRaw == null) {
+      surveyDataMap = {}; // Provide an empty map
     } else {
-      throw Exception(
-        'Survey responses data is missing or not in the expected format',
-      );
+      surveyDataMap = {}; // Fallback to an empty map
     }
 
     return ProfileUser(
-      email: json['email'] as String,
-      name: json['name'] as String,
-      profileImageUrl: imageUrl, // Can be null
+      email: data?['email'] as String,
+      name: data?['name'] as String,
+      profileImageUrl: data?['profileImageUrl'] as String?,
       surveyResponses: SurveyResponses.fromJson(
-        actualSurveyData,
-      ), // Pass the inner map
-      aiAnalysisNotes: json['aiAnalysisNotes'] as String?,
+        surveyDataMap,
+      ), // Use the determined surveyDataMap
+      aiAnalysisNotes: data?['aiAnalysisNotes'] as String?,
+      recommendedProtein: data?['recommendedProtein'] as int?,
+      recommendedCarbs: data?['recommendedCarbs'] as int?,
+      recommendedFat: data?['recommendedFat'] as int?,
+      recommendedCalories: data?['recommendedCalories'] as int?,
     );
   }
 
-  // Method to convert a ProfileUser object to a JSON-like map for Firestore
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toFirestore() {
     return {
       'email': email,
       'name': name,
-      'profileImageUrl': profileImageUrl,
-      // When saving, format survey_responses back to match the Firestore structure
-      'survey_responses': {'0': surveyResponses.toJson()},
-      'aiAnalysisNotes': aiAnalysisNotes,
+      if (profileImageUrl != null) 'profileImageUrl': profileImageUrl,
+      'survey_responses':
+          surveyResponses.toJson(), // This saves as a direct map
+      if (aiAnalysisNotes != null) 'aiAnalysisNotes': aiAnalysisNotes,
+      if (recommendedProtein != null) 'recommendedProtein': recommendedProtein,
+      if (recommendedCarbs != null) 'recommendedCarbs': recommendedCarbs,
+      if (recommendedFat != null) 'recommendedFat': recommendedFat,
+      if (recommendedCalories != null)
+        'recommendedCalories': recommendedCalories,
     };
+  }
+
+  // Updated copyWith method to include new fields
+  ProfileUser copyWith({
+    String? email,
+    String? name,
+    String? profileImageUrl,
+    SurveyResponses? surveyResponses,
+    String? aiAnalysisNotes,
+    int? recommendedProtein,
+    int? recommendedCarbs,
+    int? recommendedFat,
+    int? recommendedCalories,
+  }) {
+    return ProfileUser(
+      email: email ?? this.email,
+      name: name ?? this.name,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      surveyResponses: surveyResponses ?? this.surveyResponses,
+      aiAnalysisNotes: aiAnalysisNotes ?? this.aiAnalysisNotes,
+      recommendedProtein: recommendedProtein ?? this.recommendedProtein,
+      recommendedCarbs: recommendedCarbs ?? this.recommendedCarbs,
+      recommendedFat: recommendedFat ?? this.recommendedFat,
+      recommendedCalories: recommendedCalories ?? this.recommendedCalories,
+    );
   }
 }
 
@@ -62,9 +113,9 @@ class SurveyResponses {
   final String gender;
   final String glassesOfWater;
   final String goal;
-  final double height;
-  final String
-  mealsPerDay; // Changed 'mealsPerDay' to 'mealsPerDay' for clarity
+  final double height; // Stored as double for precision
+  final double weight; // Stored as double for precision
+  final String mealsPerDay;
 
   SurveyResponses({
     required this.activityLevel,
@@ -75,27 +126,25 @@ class SurveyResponses {
     required this.glassesOfWater,
     required this.goal,
     required this.height,
+    required this.weight,
     required this.mealsPerDay,
   });
 
-  // Factory constructor for creating SurveyResponses from the actual survey data map
-  factory SurveyResponses.fromJson(Map<String, dynamic> data) {
+  factory SurveyResponses.fromJson(Map<String, dynamic> json) {
     return SurveyResponses(
-      activityLevel: data['activityLevel'] as String,
-      age: data['age'] as int,
-      dietaryPreferences: data['dietaryPreferences'] as String,
-      foodAllergies: data['foodAllergies'] as String,
-      gender: data['gender'] as String,
-      glassesOfWater: data['glassesOfWater'] as String,
-      goal: data['goal'] as String,
-      height:
-          (data['height'] as num).toDouble(), // Handle num to double conversion
-      mealsPerDay:
-          data['mealsPerDay'] as String, // Use original key from Firestore
+      activityLevel: json['activityLevel'] as String,
+      age: json['age'] as int,
+      dietaryPreferences: json['dietaryPreferences'] as String,
+      foodAllergies: json['foodAllergies'] as String,
+      gender: json['gender'] as String,
+      glassesOfWater: json['glassesOfWater'] as String,
+      goal: json['goal'] as String,
+      height: (json['height'] as num).toDouble(), // Cast num to double
+      weight: (json['weight'] as num).toDouble(), // Cast num to double
+      mealsPerDay: json['mealsPerDay'] as String,
     );
   }
 
-  // Method to convert SurveyResponses object to a JSON-like map for saving to Firestore
   Map<String, dynamic> toJson() {
     return {
       'activityLevel': activityLevel,
@@ -106,7 +155,35 @@ class SurveyResponses {
       'glassesOfWater': glassesOfWater,
       'goal': goal,
       'height': height,
-      'mealsPerDay': mealsPerDay, // Use original key for saving
+      'weight': weight,
+      'mealsPerDay': mealsPerDay,
     };
+  }
+
+  // copyWith method for SurveyResponses
+  SurveyResponses copyWith({
+    String? activityLevel,
+    int? age,
+    String? dietaryPreferences,
+    String? foodAllergies,
+    String? gender,
+    String? glassesOfWater,
+    String? goal,
+    double? height,
+    double? weight,
+    String? mealsPerDay,
+  }) {
+    return SurveyResponses(
+      activityLevel: activityLevel ?? this.activityLevel,
+      age: age ?? this.age,
+      dietaryPreferences: dietaryPreferences ?? this.dietaryPreferences,
+      foodAllergies: foodAllergies ?? this.foodAllergies,
+      gender: gender ?? this.gender,
+      glassesOfWater: glassesOfWater ?? this.glassesOfWater,
+      goal: goal ?? this.goal,
+      height: height ?? this.height,
+      weight: weight ?? this.weight,
+      mealsPerDay: mealsPerDay ?? this.mealsPerDay,
+    );
   }
 }
