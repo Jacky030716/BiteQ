@@ -3,8 +3,8 @@ import 'package:biteq/features/food_analysis/domain/entities/food_item.dart';
 import 'package:biteq/features/food_analysis/presentation/widgets/common/food_text_field.dart';
 import 'package:biteq/features/food_analysis/presentation/widgets/common/time_selector.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddFoodDialog extends StatefulWidget {
   final String mealName;

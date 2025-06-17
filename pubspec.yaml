@@ -52,13 +52,15 @@ dependencies:
   shared_preferences: ^2.5.3
   google_sign_in: ^6.3.0
   #  firebase_ml_vision: ^0.12.0+3
-  image_picker_for_web: ^2.1.0
-  tflite_v2: ^1.0.0
+  image_picker_for_web: 3.0.6
+  # tflite_v2: ^1.0.0
   # web: ^0.5.0
   flutter_gemini: ^3.0.0
   percent_indicator: ^4.2.2
   pie_chart: ^5.4.0
   fl_chart: ^0.64.0
+  tflite_flutter: ^0.11.0
+  image: ^4.1.7
 
 dev_dependencies:
   flutter_test:

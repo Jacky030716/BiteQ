@@ -76,9 +76,9 @@ class _FoodTrackingBottomNavState extends State<FoodTrackingBottomNav>
                   ),
                   // Meals/Food Log
                   _buildNavItem(
-                    icon: Icons.restaurant_menu_outlined,
-                    activeIcon: Icons.restaurant_menu,
-                    label: 'Meals',
+                    icon: Icons.post_add_outlined,
+                    activeIcon: Icons.post_add,
+                    label: 'Posts',
                     index: 1,
                   ),
                   // Spacer for floating button
