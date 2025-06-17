@@ -27,17 +27,6 @@ class UserProfileScreen extends ConsumerWidget {
         backgroundColor: Colors.white,
         elevation: 0.5,
         shadowColor: Colors.black.withOpacity(0.1),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout_outlined, color: Colors.red.shade600),
-            onPressed: () {
-              signOutViewModel.signOut(() {
-                ref.invalidate(userProfileViewModelProvider);
-                context.go('/sign-in');
-              }, ref);
-            },
-          ),
-        ],
       ),
       body: userProfileAsyncValue.when(
         loading:
@@ -130,22 +119,6 @@ class UserProfileScreen extends ConsumerWidget {
                     ProfileInfoCard(
                       title: 'AI Insights & Security', // Updated title
                       items: [
-                        ProfileInfoItem(
-                          icon: Icons.person_outline,
-                          text: 'Personal Information',
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Personal Info tapped!'),
-                                backgroundColor: Colors.blue.shade400,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
                         // Conditional rendering for AI Analysis
                         if (user.aiAnalysisNotes == null ||
                             user.aiAnalysisNotes!.isEmpty ||
