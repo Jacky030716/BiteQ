@@ -44,18 +44,22 @@ class SurveyRepositories {
       final existingUser =
           await _firestore
               .collection('users')
-              .where('email', isEqualTo: email)
+              .where('email', isEqualTo: email.toLowerCase())
               .limit(1)
               .get();
 
       if (existingUser.docs.isNotEmpty) {
         final data = existingUser.docs.first.data();
-        final List<dynamic> surveyResponses = data['survey_responses'] ?? [];
+        final surveyResponses = data['survey_responses'];
 
-        return surveyResponses.isNotEmpty;
-      } else {
-        return false; // User document does not exist
+        if (surveyResponses != null &&
+            surveyResponses is List &&
+            surveyResponses.isNotEmpty) {
+          return true;
+        }
+        return false;
       }
+      return false;
     } on FirebaseAuthException catch (e) {
       throw TFirebaseAuthException.getException(e.code);
     } catch (e) {

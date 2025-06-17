@@ -5,6 +5,7 @@ import 'package:biteq/features/survey_form/domain/utils/survey_validation.dart';
 import 'package:biteq/features/survey_form/domain/utils/survey_mapping.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SurveyState {
   final int currentQuestionIndex;
@@ -12,6 +13,8 @@ class SurveyState {
   final int? selectedOption;
   final bool isSubmitting;
   final String? errorMessage;
+  final bool? hasCompletedSurvey;
+  final bool isLoadingSurveyStatus;
 
   const SurveyState({
     this.currentQuestionIndex = 0,
@@ -19,6 +22,8 @@ class SurveyState {
     this.selectedOption,
     this.isSubmitting = false,
     this.errorMessage,
+    this.hasCompletedSurvey,
+    this.isLoadingSurveyStatus = false,
   });
 
   SurveyState copyWith({
@@ -29,6 +34,8 @@ class SurveyState {
     String? errorMessage,
     bool clearSelectedOption = false,
     bool clearErrorMessage = false,
+    bool? hasCompletedSurvey,
+    bool? isLoadingSurveyStatus,
   }) {
     return SurveyState(
       currentQuestionIndex: currentQuestionIndex ?? this.currentQuestionIndex,
@@ -38,6 +45,9 @@ class SurveyState {
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage:
           clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
+      hasCompletedSurvey: hasCompletedSurvey ?? this.hasCompletedSurvey,
+      isLoadingSurveyStatus:
+          isLoadingSurveyStatus ?? this.isLoadingSurveyStatus,
     );
   }
 }
@@ -48,15 +58,60 @@ class SurveyViewModel extends StateNotifier<SurveyState> {
 
   SurveyViewModel(this.useCase)
     : super(
-        SurveyState(responses: List.generate(questions.length, (_) => '')),
+        // Initialize responses with nulls for un-answered questions
+        SurveyState(responses: List.generate(questions.length, (_) => null)),
       ) {
     inputController.addListener(_handleTextInputChange);
+    // Call initial data loading and survey status check
+    _initializeData();
   }
 
   bool get isFirstQuestion => state.currentQuestionIndex == 0;
   bool get isLastQuestion => state.currentQuestionIndex == questions.length - 1;
   Map<String, dynamic> get currentQuestion =>
       questions[state.currentQuestionIndex];
+
+  // Modified to include initial survey status check
+  Future<void> _initializeData() async {
+    // Only check survey status if we haven't already or explicitly need to refresh
+    if (state.hasCompletedSurvey == null) {
+      await _checkInitialSurveyStatus();
+    }
+  }
+
+  // New method to check survey status on start
+  Future<void> _checkInitialSurveyStatus() async {
+    if (state.isLoadingSurveyStatus)
+      return; // Prevent multiple simultaneous checks
+
+    state = state.copyWith(
+      isLoadingSurveyStatus: true,
+      clearErrorMessage: true,
+    );
+    try {
+      final User? user = FirebaseAuth.instance.currentUser;
+      if (user == null || user.email == null) {
+        state = state.copyWith(
+          hasCompletedSurvey: false, // Cannot check if no user/email
+          errorMessage:
+              'User not logged in or email not available to check survey status.',
+        );
+        return;
+      }
+
+      final email = user.email!;
+      final isCompleted = await useCase.getSurveyStatus(email);
+      state = state.copyWith(hasCompletedSurvey: isCompleted);
+    } catch (e) {
+      state = state.copyWith(
+        hasCompletedSurvey: false, // Assume not completed or error occurred
+        errorMessage: 'Failed to check survey status: ${e.toString()}',
+      );
+      debugPrint('Error checking survey status: $e');
+    } finally {
+      state = state.copyWith(isLoadingSurveyStatus: false);
+    }
+  }
 
   void _handleTextInputChange() {
     if (currentQuestion['type'] == 'input' ||
@@ -76,13 +131,15 @@ class SurveyViewModel extends StateNotifier<SurveyState> {
         } else {
           state = state.copyWith(errorMessage: error);
         }
+      } else {
+        // If text is empty, clear the response and any error message
+        _updateResponse(null);
+        state = state.copyWith(clearErrorMessage: true);
       }
     }
   }
 
   void _updateResponse(dynamic value) {
-    if (value == null) return;
-
     final responses = List<dynamic>.from(state.responses);
     responses[state.currentQuestionIndex] = value;
     state = state.copyWith(responses: responses, clearErrorMessage: true);
@@ -100,7 +157,8 @@ class SurveyViewModel extends StateNotifier<SurveyState> {
         state = state.copyWith(errorMessage: 'Please select an option');
         return false;
       }
-    } else if (currentQuestion['type'] == 'input') {
+    } else if (currentQuestion['type'] == 'input' ||
+        currentQuestion['type'] == 'scrollable_input') {
       final text = inputController.text;
       final validation = currentQuestion['validation'];
 
@@ -147,8 +205,16 @@ class SurveyViewModel extends StateNotifier<SurveyState> {
   void _prepareCurrentQuestion() {
     final response = state.responses[state.currentQuestionIndex];
 
-    if (currentQuestion['type'] == 'options' && response is int) {
-      state = state.copyWith(selectedOption: response);
+    if (currentQuestion['type'] == 'options') {
+      if (response != null) {
+        final options = currentQuestion['options'] as List<String>;
+        final int? restoredIndex = options.indexOf(response);
+        state = state.copyWith(
+          selectedOption: restoredIndex != -1 ? restoredIndex : null,
+        );
+      } else {
+        state = state.copyWith(clearSelectedOption: true);
+      }
     } else if (currentQuestion['type'] == 'input' ||
         currentQuestion['type'] == 'scrollable_input') {
       inputController.text = response?.toString() ?? '';
@@ -165,9 +231,18 @@ class SurveyViewModel extends StateNotifier<SurveyState> {
       final survey = mapResponsesToUserSurvey(state.responses);
       await useCase.submitSurvey(survey);
 
+      // Reset survey state after successful submission
       state = SurveyState(
-        responses: List.generate(questions.length, (_) => null),
+        responses: List.generate(
+          questions.length,
+          (_) => null,
+        ), // Clear responses
+        currentQuestionIndex: 0, // Reset to first question
+        isSubmitting: false,
+        hasCompletedSurvey: true, // Mark as completed after submission
+        isLoadingSurveyStatus: false,
       );
+      inputController.clear(); // Clear text input controller
       onSuccess();
     } catch (e) {
       state = state.copyWith(

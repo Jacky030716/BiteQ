@@ -1,41 +1,24 @@
+import 'package:biteq/core/services/gemini_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'core/navigation/app_router.dart';
 import 'package:go_router/go_router.dart';
-
+import 'core/navigation/app_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-// import 'firebase_options.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: "assets/.env");
 
-  // This ensures you don't initialize Firebase multiple times
-  try {
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: FirebaseOptions(
-          apiKey: dotenv.env['FIREBASE_API_KEY']!,
-          appId: dotenv.env['FIREBASE_APP_ID']!,
-          messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID']!,
-          projectId: dotenv.env['FIREBASE_PROJECT_ID']!,
-          authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN'],
-          storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'],
-          measurementId: dotenv.env['FIREBASE_MEASUREMENT_ID'],
-        ),
-      );
-    }
-  } catch (e) {
-    print('⚠️ Firebase already initialized: $e');
-  }
+  // Initialize Firebase using the generated options
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  GeminiService().initialize();
 
   runApp(const ProviderScope(child: MyApp()));
 }
-
-
 
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
@@ -48,7 +31,7 @@ class MyApp extends ConsumerWidget {
       title: 'BiteQ - Smart Food Diet App',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.orange),
-        textTheme: Theme.of(context).textTheme, // default system font
+        textTheme: GoogleFonts.poppinsTextTheme(),
         useMaterial3: true,
       ),
       routerConfig: router,

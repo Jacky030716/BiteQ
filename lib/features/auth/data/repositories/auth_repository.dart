@@ -147,8 +147,11 @@ class AuthRepository {
         name: userProfile['name'],
       );
     } on FirebaseAuthException catch (e) {
+      print(e.message);
+
       throw TFirebaseAuthException.getException(e.code);
     } catch (e) {
+      print(e.toString());
       throw Exception('Something went wrong');
     }
   }

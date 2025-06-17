@@ -7,11 +7,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class SurveyQuestions extends ConsumerWidget {
+// Changed to ConsumerStatefulWidget
+class SurveyQuestions extends ConsumerStatefulWidget {
   const SurveyQuestions({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SurveyQuestions> createState() => _SurveyQuestionsState();
+}
+
+class _SurveyQuestionsState extends ConsumerState<SurveyQuestions> {
+  @override
+  void initState() {
+    super.initState();
+    // Use Future.microtask to schedule the check after the build phase
+    // to avoid setState during build.
+    Future.microtask(() {
+      final viewModel = ref.read(surveyViewModelProvider.notifier);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final viewModel = ref.watch(surveyViewModelProvider.notifier);
     final state = ref.watch(surveyViewModelProvider);
     final currentQuestion = viewModel.currentQuestion;
@@ -97,6 +113,57 @@ class SurveyQuestions extends ConsumerWidget {
                     ),
           ),
         ),
+        const SizedBox(height: 20), // Space between buttons
+
+        if (state.hasCompletedSurvey == true) // Only show if explicitly true
+          SizedBox(
+            width: double.infinity,
+            height: 45,
+            child: OutlinedButton(
+              onPressed:
+                  state
+                          .isLoadingSurveyStatus // Disable if still checking status
+                      ? null
+                      : () {
+                        context.go('/home'); // Navigate to home screen
+                      },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Palette.primary,
+                side: BorderSide(color: Palette.primary),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(32),
+                ),
+              ),
+              child:
+                  state.isLoadingSurveyStatus
+                      ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.grey,
+                          strokeWidth: 2,
+                        ),
+                      )
+                      : const Text(
+                        "Skip Survey",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+            ),
+          ),
+        if (state
+            .isLoadingSurveyStatus) // Optional: Show a subtle message while checking
+          const Padding(
+            padding: EdgeInsets.only(top: 8.0),
+            child: Text(
+              "Checking survey status...",
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ),
       ],
     );
   }
@@ -108,20 +175,6 @@ class SurveyQuestions extends ConsumerWidget {
   ) {
     final viewModel = ref.watch(surveyViewModelProvider.notifier);
     final state = ref.watch(surveyViewModelProvider);
-
-    // Restore the selected option if it exists
-    int storedOptionIndex;
-    final currentResponse = state.responses[state.currentQuestionIndex];
-
-    if (currentResponse != null && currentResponse.isNotEmpty) {
-      storedOptionIndex = currentQuestion['options'].indexOf(currentResponse);
-
-      if (storedOptionIndex != -1 && state.selectedOption == null) {
-        Future.microtask(() {
-          viewModel.selectOption(storedOptionIndex);
-        });
-      }
-    }
 
     return Column(
       children: List.generate(currentQuestion['options'].length, (index) {
@@ -157,19 +210,29 @@ class SurveyQuestions extends ConsumerWidget {
   }
 
   void _handleNextPress(BuildContext context, WidgetRef ref) {
-    final viewModel = ref.watch(surveyViewModelProvider.notifier);
+    final viewModel = ref.read(
+      surveyViewModelProvider.notifier,
+    ); // Use .read for event handlers
 
     if (viewModel.isLastQuestion) {
-      viewModel.submitSurvey(() => {context.go('/home')});
+      viewModel.submitSurvey(() {
+        if (mounted) {
+          // Ensure widget is still mounted before navigating
+          context.go('/home');
+        }
+      });
     } else {
       final success = viewModel.moveToNextQuestion();
       if (!success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please select an answer before proceeding'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        if (mounted) {
+          // Ensure widget is still mounted before showing SnackBar
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please select an answer before proceeding'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
       }
     }
   }

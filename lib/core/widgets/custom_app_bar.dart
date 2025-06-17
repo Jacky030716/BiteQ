@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:biteq/core/theme/_app.Palette.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -30,12 +29,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           fontSize: 18,
         ),
       ),
-      leading:
-          leading ??
-          IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black38, size: 18),
-            onPressed: onLeadingPressed ?? () => context.pop(),
-          ),
+      // leading:
+      //     leading ??
+      //     IconButton(
+      //       icon: const Icon(Icons.arrow_back, color: Colors.black38, size: 18),
+      //       onPressed: onLeadingPressed ?? () => context.pop(),
+      //     ),
       bottom:
           showDivider
               ? const PreferredSize(

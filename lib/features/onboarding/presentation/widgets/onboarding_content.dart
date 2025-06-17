@@ -32,7 +32,7 @@ class OnboardingContent extends StatelessWidget {
           ),
           const SizedBox(height: 10),
 
-          Image.asset(item.imagePath, height: 300, fit: BoxFit.contain),
+          Image.asset(item.imagePath, height: 280, fit: BoxFit.contain),
         ],
       ),
     );
