@@ -8,7 +8,6 @@ import 'package:biteq/features/home_dashboard/presentation/pages/detail_page.dar
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-
 // Riverpod Providers
 final foodServiceProvider = Provider<FoodService>((ref) => FoodService());
 
@@ -45,7 +44,6 @@ Future<String?> getUsername() async {
   }
   return null;
 }
-
 
 // Time period selection provider
 final selectedTimePeriodProvider = StateProvider<String>((ref) => 'Week');
@@ -223,50 +221,27 @@ class HomeScreen extends ConsumerWidget {
   }
 
   void _showTimePeriodBottomSheet(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  'Select Time Period',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              _buildTimePeriodOption(context, ref, 'Day'),
-              _buildTimePeriodOption(context, ref, 'Week'),
-              _buildTimePeriodOption(context, ref, 'Month'),
-              const SizedBox(height: 20),
-            ],
-          ),
-        );
-      },
-    );
-  }
+  showModalBottomSheet(
+    context: context,
+    builder: (context) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: ['Day', 'Week', 'Month'].map((period) {
+            return ListTile(
+              title: Text(period),
+              onTap: () {
+                ref.read(selectedTimePeriodProvider.notifier).state = period;
+                Navigator.pop(context);
+              },
+            );
+          }).toList(),
+        ),
+      );
+    },
+  );
+}
 
   Widget _buildTimePeriodOption(BuildContext context, WidgetRef ref, String period) {
     final selectedTimePeriod = ref.watch(selectedTimePeriodProvider);

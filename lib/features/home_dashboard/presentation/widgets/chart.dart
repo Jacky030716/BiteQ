@@ -32,7 +32,7 @@ class CalorieBarChart extends StatelessWidget {
       child: BarChart(
         BarChartData(
           alignment: BarChartAlignment.spaceAround,
-          maxY: _getMaxY(selectedTimePeriod),
+          maxY: _getDynamicMaxY(chartData, selectedTimePeriod),
           gridData: FlGridData(
             show: true,
             horizontalInterval: _getGridInterval(selectedTimePeriod),
@@ -88,7 +88,7 @@ class CalorieBarChart extends StatelessWidget {
                       child: Text(
                         chartData[value.toInt()].label,
                         style: TextStyle(
-                          color: Colors.grey[600],
+                          color: const Color.fromARGB(255, 117, 117, 117),
                           fontSize: 12,
                         ),
                       ),
@@ -109,9 +109,7 @@ class CalorieBarChart extends StatelessWidget {
               barRods: [
                 BarChartRodData(
                   toY: data.calories,
-                  color: data.isToday
-                      ? const Color.fromARGB(255, 55, 74, 218)
-                      : Colors.grey.withOpacity(0.3),
+                  color: const Color.fromARGB(255, 45, 152, 229),
                   width: _getBarWidth(selectedTimePeriod, chartData.length),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(4),
@@ -126,18 +124,17 @@ class CalorieBarChart extends StatelessWidget {
     );
   }
 
-  double _getMaxY(String timePeriod) {
-    switch (timePeriod) {
-      case 'Day':
-        return 800; // Max for hourly data
-      case 'Week':
-        return 3000; // Max for daily data
-      case 'Month':
-        return 3000; // Max for monthly data, adjust if monthly totals are higher
-      default:
-        return 3000;
-    }
-  }
+  double _getDynamicMaxY(List<ChartData> data, String timePeriod) {
+  if (data.isEmpty) return 1000;
+
+  double maxCalories = data.map((e) => e.calories).reduce((a, b) => a > b ? a : b).toDouble();
+
+  double interval = _getGridInterval(timePeriod);
+
+  // Round up to nearest interval (e.g., 100, 500, etc.)
+  return (maxCalories / interval).ceil() * interval;
+}
+
 
   double _getGridInterval(String timePeriod) {
     switch (timePeriod) {
@@ -168,26 +165,8 @@ class CalorieBarChart extends StatelessWidget {
   }
 
   String _getLeftAxisLabel(double value, String timePeriod) {
-    switch (timePeriod) {
-      case 'Day':
-        if (value == 0) return '0';
-        if (value == 200) return '200';
-        if (value == 400) return '400';
-        if (value == 600) return '600';
-        if (value == 800) return '800';
-        return '';
-      case 'Week':
-      case 'Month': // Both Week and Month can use similar Y-axis scaling
-        if (value == 0) return '0';
-        if (value == 500) return '500';
-        if (value == 1000) return '1k';
-        if (value == 1500) return '1.5k';
-        if (value == 2000) return '2k';
-        if (value == 2500) return '2.5k';
-        if (value == 3000) return '3k';
-        return '';
-      default:
-        return '';
-    }
+    if (value == 0) return '0';
+    if (value >= 1000) return '${(value / 1000).toStringAsFixed(1)}k';
+    return value.toInt().toString();
   }
 }

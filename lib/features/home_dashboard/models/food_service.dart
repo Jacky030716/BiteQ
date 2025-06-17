@@ -113,6 +113,25 @@ double _parseToDouble(dynamic value) {
   return 0.0;
 }
 
+DateTime? _parseDateFromTimeString(String? timeString) {
+  if (timeString == null) return null;
+
+  final now = DateTime.now();
+  try {
+    final timeParts = timeString.split(RegExp(r'[: ]'));
+    int hour = int.parse(timeParts[0]);
+    int minute = int.parse(timeParts[1]);
+    final amPm = timeParts[2];
+
+    if (amPm == 'PM' && hour != 12) hour += 12;
+    if (amPm == 'AM' && hour == 12) hour = 0;
+
+    return DateTime(now.year, now.month, now.day, hour, minute);
+  } catch (e) {
+    return null;
+  }
+}
+
 
 List<ChartData> _aggregateDailyCaloriesForWeek(List<FoodItem> items, DateTime now) {
   List<ChartData> weekly = [];
@@ -195,7 +214,8 @@ String _getWeekdayLabel(int weekday) {
         protein: _parseToDouble(food['protein']),
         carbs: _parseToDouble(food['carbs']),
         fats: _parseToDouble(food['fat']),
-        dateScanned: now, // or parse if needed
+        dateScanned: _parseDateFromTimeString(food['time']) ?? now,
+ // or parse if needed
         imagePath: food['image'] ?? '', // ✅ Add this line
       ));
     }
@@ -219,50 +239,21 @@ String _getWeekdayLabel(int weekday) {
   if (user == null) return [];
 
   DateTime now = DateTime.now();
-  List<DateTime> dates = [];
+
+  // 1. Get all food items from Firestore
+  final allItems = await getAllFoodItems();
 
   if (period == 'Day') {
-    dates.add(now);
+    return _aggregateHourlyCalories(allItems, now);
   } else if (period == 'Week') {
-    DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-    for (int i = 0; i < 7; i++) {
-      dates.add(startOfWeek.add(Duration(days: i)));
-    }
+    return _aggregateDailyCaloriesForWeek(allItems, now);
   } else if (period == 'Month') {
-    int daysInMonth = DateTime(now.year, now.month + 1, 0).day;
-    for (int i = 1; i <= daysInMonth; i++) {
-      dates.add(DateTime(now.year, now.month, i));
-    }
+    return _aggregateDailyCaloriesForMonth(allItems, now);
   }
 
-  List<ChartData> chartData = [];
-
-  for (DateTime date in dates) {
-    String dateKey = "${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-    double totalCalories = 0;
-
-    final mealTypesSnapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('meals_by_date')
-        .doc(dateKey)
-        .collection('mealTypes')
-        .get();
-
-    for (var mealDoc in mealTypesSnapshot.docs) {
-      final mealData = mealDoc.data();
-      totalCalories += (mealData['calories'] ?? 0).toDouble();
-    }
-
-    chartData.add(ChartData(
-      label: _getChartLabel(date, period),
-      calories: totalCalories,
-      isToday: now.day == date.day && now.month == date.month && now.year == date.year,
-    ));
-  }
-
-  return chartData;
+  return [];
 }
+
 
 String _getChartLabel(DateTime date, String period) {
   if (period == 'Week') {
