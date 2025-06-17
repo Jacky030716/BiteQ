@@ -23,10 +23,28 @@ final chartDataProvider = FutureProvider<List<ChartData>>((ref) async {
   return await foodService.getChartData(selectedTimePeriod);
 });
 
-final todayNutritionProvider = FutureProvider<Map<String, double>>((ref) async {
+//calories sum based on period
+final dynamicNutritionProvider = FutureProvider<Map<String, double>>((ref) async {
   final foodService = ref.watch(foodServiceProvider);
-  return await foodService.getTodayNutrition();
+  final selectedPeriod = ref.watch(selectedTimePeriodProvider);
+
+  if (selectedPeriod == 'Day') {
+    return await foodService.getTodayNutrition();
+  } else if (selectedPeriod == 'Week') {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final endOfWeek = startOfWeek.add(const Duration(days: 6));
+    return await foodService.getNutritionForDateRange(startOfWeek, endOfWeek);
+  } else if (selectedPeriod == 'Month') {
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    final endOfMonth = DateTime(now.year, now.month + 1, 0);
+    return await foodService.getNutritionForDateRange(startOfMonth, endOfMonth);
+  }
+
+  return {}; // fallback
 });
+
 
 //fetch username
 Future<String?> getUsername() async {
@@ -48,16 +66,24 @@ Future<String?> getUsername() async {
 // Time period selection provider
 final selectedTimePeriodProvider = StateProvider<String>((ref) => 'Week');
 
+//period labels/titles
+final displayPeriodLabels = {
+  'Day': 'Daily',
+  'Week': 'Weekly',
+  'Month': 'Monthly',
+};
+
+
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    
     final foodItemsAsync = ref.watch(foodItemsProvider);
     final chartDataAsync = ref.watch(chartDataProvider);
-    final todayNutritionAsync = ref.watch(todayNutritionProvider);
+    final nutritionAsync = ref.watch(dynamicNutritionProvider);
     final selectedTimePeriod = ref.watch(selectedTimePeriodProvider);
+    final displayLabel = displayPeriodLabels[selectedTimePeriod] ?? selectedTimePeriod;
 
     return FutureBuilder<String?>(
       future: getUsername(),
@@ -139,11 +165,12 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 16),
 
               // Calories Overview
-              todayNutritionAsync.when(
-                data: (nutrition) => Row(
-                  children: [
-                    Text(
-                      '${nutrition['calories']?.toInt() ?? 0}',
+              nutritionAsync.when(
+                  data: (nutrition) => Row(
+                    children: [
+                      Text(
+                        '${nutrition['calories']?.toInt() ?? 0}',
+
                       style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -151,13 +178,15 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
-                      'Total kcal',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
+                    Text(
+                      '$displayLabel Calories',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black54,
                       ),
                     ),
+
                   ],
                 ),
                 loading: () => const CircularProgressIndicator(),
@@ -199,15 +228,23 @@ class HomeScreen extends ConsumerWidget {
 
               // Food Items List
               foodItemsAsync.when(
-                data: (foodItems) => ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: foodItems.length,
-                  itemBuilder: (context, index) {
-                    final foodItem = foodItems[index];
-                    return _ScannedItem(foodItem: foodItem);
-                  },
-                ),
+                data: (foodItems) {
+                  // Sort food items by dateScanned in descending order (latest first)
+                  final sortedItems = [...foodItems]
+                    ..sort((a, b) => b.dateScanned.compareTo(a.dateScanned));
+
+                  // Take only the latest 3 items
+                  final latestThree = sortedItems.take(3).toList();
+
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: latestThree.length,
+                    itemBuilder: (context, index) {
+                      return _ScannedItem(foodItem: latestThree[index]);
+                    },
+                  );
+                },
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, stack) => Center(child: Text('Error: $error')),
               ),
@@ -220,61 +257,61 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  void _showTimePeriodBottomSheet(BuildContext context, WidgetRef ref) {
+void _showTimePeriodBottomSheet(BuildContext context, WidgetRef ref) {
+  final currentValue = ref.read(selectedTimePeriodProvider);
+
   showModalBottomSheet(
     context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    backgroundColor: Colors.transparent,
     builder: (context) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: ['Day', 'Week', 'Month'].map((period) {
-            return ListTile(
-              title: Text(period),
-              onTap: () {
-                ref.read(selectedTimePeriodProvider.notifier).state = period;
-                Navigator.pop(context);
-              },
-            );
-          }).toList(),
-        ),
+      return StatefulBuilder(
+        builder: (context, setState) {
+          String selectedValue = currentValue;
+
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                unselectedWidgetColor: Colors.white,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: ['Day', 'Week', 'Month'].map((period) {
+                  return RadioListTile<String>(
+                    title: Text(
+                      period,
+                      style: const TextStyle(color: Colors.black),
+                    ),
+                    value: period,
+                    groupValue: selectedValue,
+                    activeColor: Colors.blue,
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => selectedValue = value);
+                        ref.read(selectedTimePeriodProvider.notifier).state = value;
+                        Navigator.pop(context);
+                      }
+                    },
+                  );
+                }).toList(),
+              ),
+            ),
+          );
+        },
       );
     },
   );
 }
 
-  Widget _buildTimePeriodOption(BuildContext context, WidgetRef ref, String period) {
-    final selectedTimePeriod = ref.watch(selectedTimePeriodProvider);
-    final isSelected = selectedTimePeriod == period;
 
-    return InkWell(
-      onTap: () {
-        ref.read(selectedTimePeriodProvider.notifier).state = period;
-        Navigator.pop(context);
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Row(
-          children: [
-            Icon(
-              isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-              color: isSelected ? const Color(0xFF8B5FBF) : Colors.grey,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              period,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? const Color(0xFF8B5FBF) : Colors.black87,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   String _getDateRangeText(String timePeriod) {
     final now = DateTime.now();

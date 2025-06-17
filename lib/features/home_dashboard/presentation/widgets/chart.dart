@@ -169,4 +169,5 @@ class CalorieBarChart extends StatelessWidget {
     if (value >= 1000) return '${(value / 1000).toStringAsFixed(1)}k';
     return value.toInt().toString();
   }
+  
 }

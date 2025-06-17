@@ -17,25 +17,24 @@ class FoodServiceHelpers {
   }
 
 
-  // Parse time string to DateTime
-  DateTime? parseDateFromTimeString(String? timeString) {
-    if (timeString == null) return null;
+DateTime? parseDateFromTimeString(String? timeString, DateTime baseDate) {
+  if (timeString == null) return null;
 
-    final now = DateTime.now();
-    try {
-      final timeParts = timeString.split(RegExp(r'[: ]'));
-      int hour = int.parse(timeParts[0]);
-      int minute = int.parse(timeParts[1]);
-      final amPm = timeParts[2];
+  try {
+    final timeParts = timeString.split(RegExp(r'[: ]'));
+    int hour = int.parse(timeParts[0]);
+    int minute = int.parse(timeParts[1]);
+    final amPm = timeParts[2];
 
-      if (amPm == 'PM' && hour != 12) hour += 12;
-      if (amPm == 'AM' && hour == 12) hour = 0;
+    if (amPm == 'PM' && hour != 12) hour += 12;
+    if (amPm == 'AM' && hour == 12) hour = 0;
 
-      return DateTime(now.year, now.month, now.day, hour, minute);
-    } catch (e) {
-      return null;
-    }
+    return DateTime(baseDate.year, baseDate.month, baseDate.day, hour, minute);
+  } catch (e) {
+    return null;
   }
+}
+
 
   // Aggregate calories by hour for daily view
   List<ChartData> aggregateHourlyCalories(List<FoodItem> items, DateTime now) {
