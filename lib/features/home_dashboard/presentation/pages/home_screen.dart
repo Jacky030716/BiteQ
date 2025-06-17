@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:go_router/go_router.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:biteq/features/home_dashboard/presentation/widgets/chart.dart';
 import 'package:biteq/features/home_dashboard/models/food_item.dart';
 import 'package:biteq/features/home_dashboard/models/chart_data.dart';
@@ -377,11 +374,15 @@ class _ScannedItem extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
+              child: Image.network(
                 foodItem.imagePath,
                 width: 60,
                 height: 60,
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Icon(
+                  Icons.broken_image,
+                  size: 60,
+                ),
               ),
             ),
             const SizedBox(width: 16),

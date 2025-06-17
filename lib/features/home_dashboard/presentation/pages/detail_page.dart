@@ -50,9 +50,17 @@ class DetailPage extends StatelessWidget {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
-                child: Image.asset(
+                child: Image.network(
                   foodItem.imagePath,
                   fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Icon(
+                    Icons.broken_image,
+                    size: 60,
+                  ),
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(child: CircularProgressIndicator());
+                  },
                 ),
               ),
             ),
@@ -119,8 +127,6 @@ class DetailPage extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            NavigateButton(route: '/explore', text: 'Explore More'),
           ],
         ),
       ),

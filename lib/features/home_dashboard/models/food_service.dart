@@ -1,5 +1,7 @@
 import 'food_item.dart';
 import 'chart_data.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // Read-only Service
 class FoodService {
@@ -79,11 +81,129 @@ class FoodService {
     return monthlyData;
   }
 
+  List<ChartData> _aggregateHourlyCalories(List<FoodItem> items, DateTime now) {
+  List<ChartData> hourly = [];
+
+  for (int hour = 0; hour < 24; hour += 2) {
+    final start = DateTime(now.year, now.month, now.day, hour);
+    final end = start.add(const Duration(hours: 2));
+
+    double totalCalories = items
+      .where((item) => item.dateScanned.isAfter(start) && item.dateScanned.isBefore(end))
+      .fold(0.0, (sum, item) => sum + item.calories);
+
+    hourly.add(ChartData(
+      label: hour.toString(),
+      calories: totalCalories,
+      isToday: hour <= now.hour && hour + 2 > now.hour,
+    ));
+  }
+
+  return hourly;
+}
+
+double _parseToDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    // Extract numeric part from strings like "450 calories"
+    final cleaned = RegExp(r'\d+(\.\d+)?').stringMatch(value);
+    return double.tryParse(cleaned ?? '0') ?? 0.0;
+  }
+  return 0.0;
+}
+
+
+List<ChartData> _aggregateDailyCaloriesForWeek(List<FoodItem> items, DateTime now) {
+  List<ChartData> weekly = [];
+
+  DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+  for (int i = 0; i < 7; i++) {
+    final day = startOfWeek.add(Duration(days: i));
+
+    double totalCalories = items
+      .where((item) => item.dateScanned.year == day.year &&
+                       item.dateScanned.month == day.month &&
+                       item.dateScanned.day == day.day)
+      .fold(0.0, (sum, item) => sum + item.calories);
+
+    weekly.add(ChartData(
+      label: _getWeekdayLabel(day.weekday),
+      calories: totalCalories,
+      isToday: now.day == day.day && now.month == day.month,
+    ));
+  }
+
+  return weekly;
+}
+
+List<ChartData> _aggregateDailyCaloriesForMonth(List<FoodItem> items, DateTime now) {
+  int daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+  List<ChartData> monthly = [];
+
+  for (int i = 1; i <= daysInMonth; i++) {
+    double totalCalories = items
+      .where((item) => item.dateScanned.year == now.year &&
+                       item.dateScanned.month == now.month &&
+                       item.dateScanned.day == i)
+      .fold(0.0, (sum, item) => sum + item.calories);
+
+    monthly.add(ChartData(
+      label: i.toString(),
+      calories: totalCalories,
+      isToday: now.day == i,
+    ));
+  }
+
+  return monthly;
+}
+
+String _getWeekdayLabel(int weekday) {
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  return days[weekday - 1];
+}
+
+
   // READ
   Future<List<FoodItem>> getAllFoodItems() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return List.from(_foodItems);
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return [];
+
+  final uid = user.uid;
+  final now = DateTime.now();
+  final todayKey = "${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+
+  final mealTypesSnapshot = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(uid)
+      .collection('meals_by_date')
+      .doc(todayKey)
+      .collection('mealTypes')
+      .get();
+
+  List<FoodItem> allItems = [];
+
+  for (var doc in mealTypesSnapshot.docs) {
+    final data = doc.data();
+    final List<dynamic> foods = data['foods'] ?? [];
+
+    for (var food in foods) {
+      allItems.add(FoodItem(
+        id: food['id'] ?? '',
+        name: food['name'] ?? '',
+        calories: _parseToDouble(food['calories']).toInt(),
+        protein: _parseToDouble(food['protein']),
+        carbs: _parseToDouble(food['carbs']),
+        fats: _parseToDouble(food['fat']),
+        dateScanned: now, // or parse if needed
+        imagePath: food['image'] ?? '', // ✅ Add this line
+      ));
+    }
   }
+
+  return allItems;
+}
+
 
   Future<FoodItem?> getFoodItemById(String id) async {
     await Future.delayed(const Duration(milliseconds: 300));
@@ -94,19 +214,68 @@ class FoodService {
     }
   }
 
-  Future<List<ChartData>> getChartData(String timePeriod) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    switch (timePeriod) {
-      case 'Day':
-        return List.from(_dailyData);
-      case 'Week':
-        return List.from(_weeklyData);
-      case 'Month':
-        return _getMonthlyData(); // Call the new method for monthly data
-      default:
-        return List.from(_weeklyData);
+  Future<List<ChartData>> getChartData(String period) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return [];
+
+  DateTime now = DateTime.now();
+  List<DateTime> dates = [];
+
+  if (period == 'Day') {
+    dates.add(now);
+  } else if (period == 'Week') {
+    DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    for (int i = 0; i < 7; i++) {
+      dates.add(startOfWeek.add(Duration(days: i)));
+    }
+  } else if (period == 'Month') {
+    int daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+    for (int i = 1; i <= daysInMonth; i++) {
+      dates.add(DateTime(now.year, now.month, i));
     }
   }
+
+  List<ChartData> chartData = [];
+
+  for (DateTime date in dates) {
+    String dateKey = "${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+    double totalCalories = 0;
+
+    final mealTypesSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('meals_by_date')
+        .doc(dateKey)
+        .collection('mealTypes')
+        .get();
+
+    for (var mealDoc in mealTypesSnapshot.docs) {
+      final mealData = mealDoc.data();
+      totalCalories += (mealData['calories'] ?? 0).toDouble();
+    }
+
+    chartData.add(ChartData(
+      label: _getChartLabel(date, period),
+      calories: totalCalories,
+      isToday: now.day == date.day && now.month == date.month && now.year == date.year,
+    ));
+  }
+
+  return chartData;
+}
+
+String _getChartLabel(DateTime date, String period) {
+  if (period == 'Week') {
+    return _getWeekdayLabel(date.weekday);
+  } else if (period == 'Month') {
+    return date.day.toString();
+  } else if (period == 'Day') {
+    return date.hour.toString(); // not really used in this case
+  } else {
+    return '';
+  }
+}
+
 
   // Get total nutrition for today
   Future<Map<String, double>> getTodayNutrition() async {
