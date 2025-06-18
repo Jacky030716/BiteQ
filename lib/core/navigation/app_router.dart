@@ -1,15 +1,16 @@
 import 'package:biteq/core/services/redirect_services.dart';
-import 'package:biteq/core/widgets/splash_screen.dart';
-// import 'package:biteq/features/ai_detection/presentation/pages/ai_detection.dart';
 import 'package:biteq/features/ai_detection/presentation/pages/image_picker_page.dart';
-import 'package:biteq/features/home_dashboard/presentation/pages/home_screen.dart';
 
 import 'package:biteq/features/auth/data/models/user_model.dart';
 import 'package:biteq/features/auth/data/repositories/auth_repository.dart';
+import 'package:biteq/features/auth/presentation/pages/change_password_screen.dart';
 import 'package:biteq/features/auth/presentation/pages/forgot_password_screen.dart';
 import 'package:biteq/features/auth/presentation/pages/sign_in_screen.dart';
 import 'package:biteq/features/auth/presentation/pages/sign_up_screen.dart';
+import 'package:biteq/features/food_analysis/presentation/pages/food_analysis_page.dart';
+import 'package:biteq/features/home_dashboard/presentation/pages/home_screen.dart';
 import 'package:biteq/features/onboarding/presentation/pages/onboarding_page.dart';
+import 'package:biteq/features/profile/presentation/user_profile_page.dart';
 import 'package:biteq/features/survey_form/data/repositories/survey_repositories.dart';
 import 'package:biteq/features/survey_form/presentation/pages/survey_page.dart';
 import 'package:biteq/main_navigation_wrapper.dart';
@@ -66,10 +67,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(
-        path: '/home',
-        builder: (context, state) => const MainNavigationWrapper(),
-      ),
-      GoRoute(
         path: '/sign-up',
         builder: (context, state) => const SignUpScreen(),
       ),
@@ -77,8 +74,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/sign-in',
         builder: (context, state) => const SignInScreen(),
       ),
-      // GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
-      // GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingPage(),
@@ -88,24 +83,45 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ForgotPasswordScreen(),
       ),
       GoRoute(path: '/survey', builder: (context, state) => const SurveyPage()),
-      // GoRoute(
-      //   path: '/analysis',
-      //   builder: (context, state) => const FoodAnalysisPage(),
-      // ),
       GoRoute(
         path: '/explore',
         builder: (context, state) => const ExplorePage(),
       ),
       GoRoute(
+        path: '/change-password',
+        builder: (context, state) => const ChangePasswordScreen(),
+      ),
+      GoRoute(
         path: '/create-post',
         builder: (context, state) => const CreatePostPage(),
       ),
-      GoRoute(
-        path: '/ai_detection',
-        builder: (context, state) => const ImagePickerPage(),
-
-        //         context.go('/ai_detection');  // or
-        // Navigator.pushNamed(context, '/ai_detection');
+      ShellRoute(
+        builder: (context, state, child) {
+          return MainNavigationWrapper();
+        },
+        routes: [
+          GoRoute(
+            path: '/home',
+            builder: (context, state) => const HomeScreen(),
+          ),
+          GoRoute(
+            path: '/explore',
+            builder: (context, state) => const ExplorePage(),
+          ),
+          GoRoute(
+            path: '/ai_detection', // Assuming this is your camera/AI page
+            builder: (context, state) => const ImagePickerPage(),
+          ),
+          GoRoute(
+            path: '/food-analysis', // Add your FoodAnalysisPage if it's a tab
+            builder: (context, state) => const FoodAnalysisPage(),
+          ),
+          GoRoute(
+            path: '/profile',
+            builder: (context, state) => const UserProfileScreen(),
+          ),
+          // Add other main navigation routes here
+        ],
       ),
     ],
     errorBuilder:

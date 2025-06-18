@@ -187,18 +187,7 @@ class UserProfileScreen extends ConsumerWidget {
                           icon: Icons.vpn_key_outlined,
                           text: 'Password & Security',
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text(
-                                  'Password & Security tapped!',
-                                ),
-                                backgroundColor: Colors.blue.shade400,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                            );
+                            context.go('/change-password');
                           },
                         ),
                         ProfileInfoItem(

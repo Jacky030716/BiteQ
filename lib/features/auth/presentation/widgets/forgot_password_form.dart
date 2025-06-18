@@ -47,7 +47,7 @@ class _ForgotPasswordFormState extends ConsumerState<ForgotPasswordForm> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showErrorDialog(
           context,
-          (state.error as Exception).toString().replaceFirst('Exception: ', ''),
+          (state.error).toString().replaceFirst('Exception: ', ''),
         );
       });
     }
