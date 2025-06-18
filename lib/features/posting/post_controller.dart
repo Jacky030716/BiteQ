@@ -1,6 +1,7 @@
+// post_controller.dart
 import 'post_model.dart';
 
-class MyHomeController {
+class PostController {
   final List<Post> posts = [
     Post(
       title: 'Mediterranean Pasta',
@@ -13,5 +14,11 @@ class MyHomeController {
 
   void addPost(Post post) {
     posts.add(post);
+  }
+
+  void addComment(int postIndex, Comment comment) {
+    if (postIndex >= 0 && postIndex < posts.length) {
+      posts[postIndex].comments.add(comment);
+    }
   }
 }

@@ -3,7 +3,8 @@ import 'post_controller.dart';
 import 'post_model.dart';
 
 class CreatePostPage extends StatefulWidget {
-  const CreatePostPage({super.key});
+  final PostController postController;
+  const CreatePostPage({super.key, required this.postController});
 
   @override
   State<CreatePostPage> createState() => _CreatePostPageState();
@@ -18,14 +19,24 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   void _submit() {
     if (_formKey.currentState!.validate()) {
-      // You would dispatch to a provider or controller here
-      print("Post Created:");
-      print(_titleController.text);
-      print(_imageUrlController.text);
-      print(_authorController.text);
-      print(_descriptionController.text);
-      Navigator.pop(context); // Go back to explore
+      final newPost = Post(
+        title: _titleController.text,
+        imageUrl: _imageUrlController.text,
+        author: _authorController.text,
+        description: _descriptionController.text,
+      );
+      widget.postController.addPost(newPost);
+      Navigator.pop(context);
     }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _imageUrlController.dispose();
+    _authorController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
   }
 
   @override
