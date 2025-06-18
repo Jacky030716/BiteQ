@@ -1,3 +1,4 @@
+import 'dart:io'; // For File type
 import 'package:biteq/features/profile/presentation/ai_analysis_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:biteq/features/auth/presentation/viewmodel/sign_out_view_model.dart';
@@ -7,9 +8,53 @@ import 'package:biteq/features/profile/presentation/survey_summary_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:biteq/features/profile/viewmodels/user_profile_view_model.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 class UserProfileScreen extends ConsumerWidget {
   const UserProfileScreen({super.key});
+
+  // Function to handle image picking and upload
+  Future<void> _pickAndUploadProfileImage(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final ImagePicker picker = ImagePicker();
+    final userProfileViewModel = ref.read(
+      userProfileViewModelProvider.notifier,
+    );
+
+    try {
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+      ); // Or ImageSource.camera
+      if (image != null) {
+        final File imageFile = File(image.path);
+        await userProfileViewModel.updateProfileImage(imageFile);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Profile image updated!'),
+            backgroundColor: Colors.green.shade400,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error picking or uploading image: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update profile image: $e'),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,6 +72,17 @@ class UserProfileScreen extends ConsumerWidget {
         backgroundColor: Colors.white,
         elevation: 0.5,
         shadowColor: Colors.black.withOpacity(0.1),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout_outlined, color: Colors.red.shade600),
+            onPressed: () {
+              signOutViewModel.signOut(() {
+                ref.invalidate(userProfileViewModelProvider);
+                context.go('/sign-in');
+              }, ref);
+            },
+          ),
+        ],
       ),
       body: userProfileAsyncValue.when(
         loading:
@@ -112,6 +168,11 @@ class UserProfileScreen extends ConsumerWidget {
                       name: user.name,
                       email: user.email,
                       profileImageUrl: user.profileImageUrl,
+                      onImageTap:
+                          () => _pickAndUploadProfileImage(
+                            context,
+                            ref,
+                          ), // NEW: Pass the image tap callback
                     ),
                     const SizedBox(height: 24),
                     SurveySummaryCard(surveyResponses: user.surveyResponses),
@@ -138,7 +199,6 @@ class UserProfileScreen extends ConsumerWidget {
                                     ? null
                                     : () async {
                                       // Disable button while generating
-                                      // Show loading indicator or disable button while generating
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
@@ -163,8 +223,6 @@ class UserProfileScreen extends ConsumerWidget {
                                                 .notifier,
                                           )
                                           .generateAndSaveAiAnalysis();
-                                      // After generation, the UI will rebuild with the updated notes
-                                      // SnackBar for success will be handled by the VM or by the _loadUserProfile completing
                                     },
                           )
                         else
@@ -172,8 +230,8 @@ class UserProfileScreen extends ConsumerWidget {
                             icon: Icons.analytics_outlined, // Analysis icon
                             text: 'View AI Analysis & Macros', // Updated text
                             onTap: () {
-                              // Call the extracted dialog function
                               showAiAnalysisDialog(
+                                // Calls the external dialog function
                                 context,
                                 user.aiAnalysisNotes!,
                                 user.recommendedProtein,
@@ -187,7 +245,9 @@ class UserProfileScreen extends ConsumerWidget {
                           icon: Icons.vpn_key_outlined,
                           text: 'Password & Security',
                           onTap: () {
-                            context.go('/change-password');
+                            context.go(
+                              '/change-password',
+                            ); // Navigation to Change Password Screen
                           },
                         ),
                         ProfileInfoItem(

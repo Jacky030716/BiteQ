@@ -21,6 +21,7 @@ class SurveySummaryCard extends StatelessWidget {
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
             color: Colors.black87,
+            fontSize: 18,
           ),
         ),
         const SizedBox(height: 4),
@@ -68,6 +69,12 @@ class SurveySummaryCard extends StatelessWidget {
                 '${surveyResponses.height.toInt()} cm',
                 'Height',
                 Icons.height,
+              ),
+              _buildInfoColumn(
+                context,
+                '${surveyResponses.weight.toInt()} kg',
+                'Weight',
+                Icons.monitor_weight_outlined,
               ),
               _buildInfoColumn(
                 context,

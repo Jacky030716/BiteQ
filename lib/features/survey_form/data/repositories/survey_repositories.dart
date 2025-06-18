@@ -20,17 +20,9 @@ class SurveyRepositories {
       final existingUser = await userDocRef.get();
 
       if (existingUser.exists) {
-        final existingData = existingUser.data();
-        final List<dynamic> surveyResponses =
-            existingData?['survey_responses'] ?? [];
-
-        surveyResponses.add(survey.toJson());
-
-        await userDocRef.update({'survey_responses': surveyResponses});
-      } else {
         await userDocRef.set({
-          'survey_responses': [survey.toJson()],
-        });
+          'survey_responses': survey.toJson(),
+        }, SetOptions(merge: true));
       }
     } on FirebaseAuthException catch (e) {
       throw TFirebaseAuthException.getException(e.code);

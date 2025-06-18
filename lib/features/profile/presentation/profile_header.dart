@@ -4,16 +4,31 @@ class ProfileHeader extends StatelessWidget {
   final String name;
   final String email;
   final String? profileImageUrl;
+  final VoidCallback? onImageTap;
+  final VoidCallback? onEditTap;
 
   const ProfileHeader({
     super.key,
     required this.name,
     required this.email,
     this.profileImageUrl,
+    this.onImageTap,
+    this.onEditTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    ImageProvider? currentImageProvider;
+    Widget? avatarChild; // Widget to display inside CircleAvatar if no image
+
+    if (profileImageUrl == 'loading') {
+      avatarChild = CircularProgressIndicator(color: Colors.blue.shade400);
+    } else if (profileImageUrl != null && profileImageUrl!.isNotEmpty) {
+      currentImageProvider = NetworkImage(profileImageUrl!);
+    } else {
+      avatarChild = Icon(Icons.person, size: 60, color: Colors.blue.shade400);
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       decoration: BoxDecoration(
@@ -29,17 +44,46 @@ class ProfileHeader extends StatelessWidget {
       ),
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 60,
-            backgroundColor: Colors.blue.shade100,
-            backgroundImage:
-                profileImageUrl != null && profileImageUrl!.isNotEmpty
-                    ? NetworkImage(profileImageUrl!)
-                    : null,
-            child:
-                profileImageUrl == null || profileImageUrl!.isEmpty
-                    ? Icon(Icons.person, size: 60, color: Colors.blue.shade400)
-                    : null,
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              GestureDetector(
+                onTap: onImageTap,
+                child: CircleAvatar(
+                  radius: 60,
+                  backgroundColor: Colors.blue.shade100,
+                  backgroundImage: currentImageProvider,
+                  child:
+                      avatarChild, // Displays either loading indicator or person icon
+                ),
+              ),
+              Positioned(
+                bottom: 4,
+                right: 4,
+                child: GestureDetector(
+                  onTap: onImageTap,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.edit,
+                      size: 20,
+                      color: Colors.blueAccent,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Text(

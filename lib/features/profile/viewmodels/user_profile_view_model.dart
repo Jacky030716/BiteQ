@@ -1,5 +1,7 @@
+import 'dart:io';
+
 import 'package:biteq/features/profile/entities/profile_user.dart';
-import 'package:biteq/features/profile/repositories/user_repository.dart';
+import 'package:biteq/features/profile/repositories/user_profile_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,16 +10,18 @@ import 'dart:convert'; // For JSON decoding
 // Provides the UserProfileViewModel
 final userProfileViewModelProvider =
     StateNotifierProvider<UserProfileViewModel, AsyncValue<ProfileUser>>((ref) {
-      return UserProfileViewModel(ref.read(userRepositoryProvider));
+      return UserProfileViewModel(ref.read(userProfileRepositoryProvider));
     });
 
-// Provides the UserRepository instance
-final userRepositoryProvider = Provider((ref) => UserRepository());
+// Provides the UserProfileRepository instance
+final userProfileRepositoryProvider = Provider(
+  (ref) => UserProfileRepository(),
+);
 
 class UserProfileViewModel extends StateNotifier<AsyncValue<ProfileUser>> {
-  final UserRepository _userRepository;
+  final UserProfileRepository _userProfileRepository;
 
-  UserProfileViewModel(this._userRepository)
+  UserProfileViewModel(this._userProfileRepository)
     : super(const AsyncValue.loading()) {
     _loadUserProfile();
   }
@@ -26,10 +30,36 @@ class UserProfileViewModel extends StateNotifier<AsyncValue<ProfileUser>> {
   Future<void> _loadUserProfile() async {
     try {
       state = const AsyncValue.loading();
-      final user = await _userRepository.fetchUserProfile();
+      final user = await _userProfileRepository.fetchUserProfile();
       state = AsyncValue.data(user);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> updateProfileImage(File imageFile) async {
+    if (state is! AsyncData<ProfileUser>) {
+      state = AsyncValue.error(
+        'Cannot update profile image: User data not loaded.',
+        StackTrace.current,
+      );
+      return;
+    }
+
+    state = AsyncValue.data(
+      state.value!.copyWith(profileImageUrl: 'loading'),
+    ); // Temporary state for UI feedback
+
+    try {
+      final String imageUrl = await _userProfileRepository.uploadProfileImage(
+        imageFile,
+      );
+      await _userProfileRepository.updateProfileImageUrl(imageUrl);
+
+      await _loadUserProfile();
+    } catch (e, st) {
+      state = AsyncValue.error('Failed to upload profile image: $e', st);
+      await _loadUserProfile(); // Attempt to restore previous valid state
     }
   }
 
@@ -131,11 +161,11 @@ class UserProfileViewModel extends StateNotifier<AsyncValue<ProfileUser>> {
       }
 
       // Update Firestore with both analysis notes and macro recommendations
-      await _userRepository.updateAiAnalysisNotes(
+      await _userProfileRepository.updateAiAnalysisNotes(
         firebaseUser.uid,
         generatedNotes,
       );
-      await _userRepository.updateUserMacroRecommendations(
+      await _userProfileRepository.updateUserMacroRecommendations(
         firebaseUser.uid,
         protein: recProtein,
         carbs: recCarbs,

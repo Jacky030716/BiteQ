@@ -80,6 +80,7 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
           "For example: 250,15,30,10 "
           "If you cannot determine a value, use 0. Do not include any other text or explanations.";
 
+      // ignore: deprecated_member_use
       final response = await gemini.textAndImage(
         text: prompt,
         images: [imageBytes],
@@ -94,8 +95,6 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
       }
 
       if (responseText != null && responseText.isNotEmpty) {
-        print('Gemini Response Text: $responseText');
-
         // Extract food name in parallel for better user experience
         _extractFoodName(
           imageFile,
@@ -132,7 +131,6 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
       }
     } catch (e) {
       _showSnackBar("Error analyzing image: ${e.toString()}", isError: true);
-      print('Error analyzing image with Gemini: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -153,6 +151,7 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
           "Respond with ONLY the name of the food, nothing else. "
           "For example: 'Grilled Chicken Breast' or 'Caesar Salad' or 'Chocolate Cake'";
 
+      // ignore: deprecated_member_use
       final nameResponse = await gemini.textAndImage(
         text: namePrompt,
         images: [imageBytes],
@@ -162,7 +161,7 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
       if (nameResponse?.content?.parts?.isNotEmpty == true) {
         final part = nameResponse!.content!.parts!.first;
         if (part is TextPart) {
-          foodName = part.text?.trim();
+          foodName = part.text.trim();
         }
       }
 
@@ -178,7 +177,6 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
       }
     } catch (e) {
       print('Error extracting food name: $e');
-      // Don't show an error snackbar for food name extraction as it's a secondary, optional feature.
     }
   }
 

@@ -81,8 +81,9 @@ class SurveyViewModel extends StateNotifier<SurveyState> {
 
   // New method to check survey status on start
   Future<void> _checkInitialSurveyStatus() async {
-    if (state.isLoadingSurveyStatus)
+    if (state.isLoadingSurveyStatus) {
       return; // Prevent multiple simultaneous checks
+    }
 
     state = state.copyWith(
       isLoadingSurveyStatus: true,

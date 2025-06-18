@@ -1,10 +1,65 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:biteq/features/profile/entities/profile_user.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
-class UserRepository {
+class UserProfileRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  String? get _currentUserId => _auth.currentUser?.uid;
+
+  Future<String> uploadProfileImage(File imageFile) async {
+    final userId = _currentUserId;
+    if (userId == null) {
+      throw Exception('User not authenticated for image upload.');
+    }
+
+    try {
+      // Define the storage path
+      final Reference storageRef = _storage
+          .ref()
+          .child('users')
+          .child(userId)
+          .child('profile_images')
+          .child('profile_image.jpg'); // Fixed filename
+
+      final UploadTask uploadTask = storageRef.putFile(imageFile);
+      final TaskSnapshot snapshot = await uploadTask;
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } on FirebaseException catch (e) {
+      throw Exception('Failed to upload profile image: ${e.message}');
+    } catch (e) {
+      throw Exception('An unexpected error occurred during image upload: $e');
+    }
+  }
+
+  /// Updates the `profileImageUrl` field in the user's Firestore document.
+  /// Throws an exception if update fails or user is not authenticated.
+  Future<void> updateProfileImageUrl(String imageUrl) async {
+    final userId = _currentUserId;
+    if (userId == null) {
+      throw Exception(
+        'User not authenticated. Cannot update profile image URL.',
+      );
+    }
+
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'profileImageUrl': imageUrl,
+      });
+    } on FirebaseException catch (e) {
+      throw Exception('Failed to update profile image URL: ${e.message}');
+    } catch (e) {
+      throw Exception(
+        'An unexpected error occurred while updating profile image URL: $e',
+      );
+    }
+  }
 
   Future<ProfileUser> fetchUserProfile() async {
     final user = _auth.currentUser;
@@ -84,18 +139,6 @@ class UserRepository {
       await _firestore.collection('users').doc(uid).set(newUser.toFirestore());
     } catch (e) {
       print('Error creating user profile for $uid: $e');
-      rethrow;
-    }
-  }
-
-  /// Updates the user's profile image URL.
-  Future<void> updateProfileImageUrl(String userId, String? imageUrl) async {
-    try {
-      await _firestore.collection('users').doc(userId).update({
-        'profileImageUrl': imageUrl,
-      });
-    } catch (e) {
-      print('Error updating profile image URL for $userId: $e');
       rethrow;
     }
   }

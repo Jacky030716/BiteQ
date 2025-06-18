@@ -369,7 +369,6 @@ class MealViewModel extends StateNotifier<AsyncValue<List<Meal>>> {
   }
 
   // Refreshes the meal data for the current selected date.
-  @override // Mark as override if this method already exists in base
   Future<void> refresh() async {
     await fetchMeals();
   }
