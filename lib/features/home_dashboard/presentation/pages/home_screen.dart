@@ -115,140 +115,157 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Overview Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Overview',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => _showTimePeriodBottomSheet(context, ref),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 3,
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Text(
-                            selectedTimePeriod,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.grey[600]),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Calories Overview
-              nutritionAsync.when(
-                  data: (nutrition) => Row(
-                    children: [
-                      Text(
-                        '${nutrition['calories']?.toInt() ?? 0}',
-
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '$displayLabel Calories',
-                      style: const TextStyle(
+      body: RefreshIndicator(
+        // Added RefreshIndicator here for pull-to-refresh
+        color: Colors.blue,
+        onRefresh: () async {
+          // Refresh all the data providers
+          ref.invalidate(foodItemsProvider);
+          ref.invalidate(chartDataProvider);
+          ref.invalidate(dynamicNutritionProvider);
+          
+          // Wait for all providers to complete their refresh
+          await Future.wait([
+            ref.read(foodItemsProvider.future),
+            ref.read(chartDataProvider.future),
+            ref.read(dynamicNutritionProvider.future),
+          ]);
+        },
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Overview Section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Overview',
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black54,
+                        color: Colors.black87,
                       ),
                     ),
-
+                    GestureDetector(
+                      onTap: () => _showTimePeriodBottomSheet(context, ref),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              spreadRadius: 1,
+                              blurRadius: 3,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Text(
+                              selectedTimePeriod,
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.grey[600]),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-                loading: () => const CircularProgressIndicator(),
-                error: (error, stack) => Text('Error: $error'),
-              ),
-              const SizedBox(height: 8),
+                const SizedBox(height: 16),
 
-              // Date Range
-              Text(
-                _getDateRangeText(selectedTimePeriod),
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
+                // Calories Overview
+                nutritionAsync.when(
+                    data: (nutrition) => Row(
+                      children: [
+                        Text(
+                          '${nutrition['calories']?.toInt() ?? 0}',
+
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '$displayLabel Calories',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black54,
+                        ),
+                      ),
+
+                    ],
+                  ),
+                  loading: () => const CircularProgressIndicator(),
+                  error: (error, stack) => Text('Error: $error'),
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 8),
 
-              // Dynamic Chart - Now uses the new widget
-              chartDataAsync.when(
-                data: (chartData) => CalorieBarChart(
-                  chartData: chartData,
-                  selectedTimePeriod: selectedTimePeriod,
+                // Date Range
+                Text(
+                  _getDateRangeText(selectedTimePeriod),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
                 ),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) => Center(child: Text('Error: $error')),
-              ),
-              const SizedBox(height: 32),
+                const SizedBox(height: 24),
 
-              // Recently Scanned Section
-              const Text(
-                'Recently Scanned',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                // Dynamic Chart - Now uses the new widget
+                chartDataAsync.when(
+                  data: (chartData) => CalorieBarChart(
+                    chartData: chartData,
+                    selectedTimePeriod: selectedTimePeriod,
+                  ),
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (error, stack) => Center(child: Text('Error: $error')),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 32),
 
-              // Food Items List
-              foodItemsAsync.when(
-                data: (foodItems) {
-                  // Sort food items by dateScanned in descending order (latest first)
-                  final sortedItems = [...foodItems]
-                    ..sort((a, b) => b.dateScanned.compareTo(a.dateScanned));
+                // Recently Scanned Section
+                const Text(
+                  'Recently Scanned',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 16),
 
-                  // Take only the latest 3 items
-                  final latestThree = sortedItems.take(3).toList();
+                // Food Items List
+                foodItemsAsync.when(
+                  data: (foodItems) {
+                    // Sort food items by dateScanned in descending order (latest first)
+                    final sortedItems = [...foodItems]
+                      ..sort((a, b) => b.dateScanned.compareTo(a.dateScanned));
 
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: latestThree.length,
-                    itemBuilder: (context, index) {
-                      return _ScannedItem(foodItem: latestThree[index]);
-                    },
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) => Center(child: Text('Error: $error')),
-              ),
-            ],
+                    // Take only the latest 3 items
+                    final latestThree = sortedItems.take(3).toList();
+
+                    return ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: latestThree.length,
+                      itemBuilder: (context, index) {
+                        return _ScannedItem(foodItem: latestThree[index]);
+                      },
+                    );
+                  },
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (error, stack) => Center(child: Text('Error: $error')),
+                ),
+              ],
+            ),
           ),
         ),
       ),
