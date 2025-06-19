@@ -4,5 +4,9 @@ class ChartData {
   final double calories;
   final bool isToday;
 
-  ChartData({required this.label, required this.calories, this.isToday = false});
+  ChartData({
+    required this.label,
+    required this.calories,
+    this.isToday = false,
+  });
 }

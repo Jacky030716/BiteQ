@@ -3,7 +3,6 @@ import 'chart_data.dart';
 
 // Helper class for FoodService - contains utility methods and data aggregation logic
 class FoodServiceHelpers {
-  
   // Utility method to parse various input types to double
   double parseToDouble(dynamic value) {
     if (value == null) return 0.0;
@@ -16,25 +15,29 @@ class FoodServiceHelpers {
     return 0.0;
   }
 
+  DateTime? parseDateFromTimeString(String? timeString, DateTime baseDate) {
+    if (timeString == null) return null;
 
-DateTime? parseDateFromTimeString(String? timeString, DateTime baseDate) {
-  if (timeString == null) return null;
+    try {
+      final timeParts = timeString.split(RegExp(r'[: ]'));
+      int hour = int.parse(timeParts[0]);
+      int minute = int.parse(timeParts[1]);
+      final amPm = timeParts[2];
 
-  try {
-    final timeParts = timeString.split(RegExp(r'[: ]'));
-    int hour = int.parse(timeParts[0]);
-    int minute = int.parse(timeParts[1]);
-    final amPm = timeParts[2];
+      if (amPm == 'PM' && hour != 12) hour += 12;
+      if (amPm == 'AM' && hour == 12) hour = 0;
 
-    if (amPm == 'PM' && hour != 12) hour += 12;
-    if (amPm == 'AM' && hour == 12) hour = 0;
-
-    return DateTime(baseDate.year, baseDate.month, baseDate.day, hour, minute);
-  } catch (e) {
-    return null;
+      return DateTime(
+        baseDate.year,
+        baseDate.month,
+        baseDate.day,
+        hour,
+        minute,
+      );
+    } catch (e) {
+      return null;
+    }
   }
-}
-
 
   // Aggregate calories by hour for daily view
   List<ChartData> aggregateHourlyCalories(List<FoodItem> items, DateTime now) {
@@ -45,21 +48,30 @@ DateTime? parseDateFromTimeString(String? timeString, DateTime baseDate) {
       final end = start.add(const Duration(hours: 2));
 
       double totalCalories = items
-        .where((item) => item.dateScanned.isAfter(start) && item.dateScanned.isBefore(end))
-        .fold(0.0, (sum, item) => sum + item.calories);
+          .where(
+            (item) =>
+                item.dateScanned.isAfter(start) &&
+                item.dateScanned.isBefore(end),
+          )
+          .fold(0.0, (sum, item) => sum + item.calories);
 
-      hourly.add(ChartData(
-        label: hour.toString(),
-        calories: totalCalories,
-        isToday: hour <= now.hour && hour + 2 > now.hour,
-      ));
+      hourly.add(
+        ChartData(
+          label: hour.toString(),
+          calories: totalCalories,
+          isToday: hour <= now.hour && hour + 2 > now.hour,
+        ),
+      );
     }
 
     return hourly;
   }
 
   // Aggregate calories by day for weekly view
-  List<ChartData> aggregateDailyCaloriesForWeek(List<FoodItem> items, DateTime now) {
+  List<ChartData> aggregateDailyCaloriesForWeek(
+    List<FoodItem> items,
+    DateTime now,
+  ) {
     List<ChartData> weekly = [];
 
     DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1));
@@ -67,38 +79,51 @@ DateTime? parseDateFromTimeString(String? timeString, DateTime baseDate) {
       final day = startOfWeek.add(Duration(days: i));
 
       double totalCalories = items
-        .where((item) => item.dateScanned.year == day.year &&
-                         item.dateScanned.month == day.month &&
-                         item.dateScanned.day == day.day)
-        .fold(0.0, (sum, item) => sum + item.calories);
+          .where(
+            (item) =>
+                item.dateScanned.year == day.year &&
+                item.dateScanned.month == day.month &&
+                item.dateScanned.day == day.day,
+          )
+          .fold(0.0, (sum, item) => sum + item.calories);
 
-      weekly.add(ChartData(
-        label: getWeekdayLabel(day.weekday),
-        calories: totalCalories,
-        isToday: now.day == day.day && now.month == day.month,
-      ));
+      weekly.add(
+        ChartData(
+          label: getWeekdayLabel(day.weekday),
+          calories: totalCalories,
+          isToday: now.day == day.day && now.month == day.month,
+        ),
+      );
     }
 
     return weekly;
   }
 
   // Aggregate calories by day for monthly view
-  List<ChartData> aggregateDailyCaloriesForMonth(List<FoodItem> items, DateTime now) {
+  List<ChartData> aggregateDailyCaloriesForMonth(
+    List<FoodItem> items,
+    DateTime now,
+  ) {
     int daysInMonth = DateTime(now.year, now.month + 1, 0).day;
     List<ChartData> monthly = [];
 
     for (int i = 1; i <= daysInMonth; i++) {
       double totalCalories = items
-        .where((item) => item.dateScanned.year == now.year &&
-                         item.dateScanned.month == now.month &&
-                         item.dateScanned.day == i)
-        .fold(0.0, (sum, item) => sum + item.calories);
+          .where(
+            (item) =>
+                item.dateScanned.year == now.year &&
+                item.dateScanned.month == now.month &&
+                item.dateScanned.day == i,
+          )
+          .fold(0.0, (sum, item) => sum + item.calories);
 
-      monthly.add(ChartData(
-        label: i.toString(),
-        calories: totalCalories,
-        isToday: now.day == i,
-      ));
+      monthly.add(
+        ChartData(
+          label: i.toString(),
+          calories: totalCalories,
+          isToday: now.day == i,
+        ),
+      );
     }
 
     return monthly;
