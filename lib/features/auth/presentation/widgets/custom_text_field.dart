@@ -21,41 +21,58 @@ class CustomTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: labelText,
-        errorText: errorText,
-        errorStyle: const TextStyle(
-          color: Colors.red,
-          fontSize: 12,
-          overflow: TextOverflow.visible,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: labelText,
+            // errorText: errorText,
+            errorStyle: const TextStyle(
+              color: Colors.red,
+              fontSize: 12,
+              overflow: TextOverflow.visible,
+            ),
+            labelStyle: TextStyle(color: Palette.placeholder),
+            floatingLabelStyle: TextStyle(color: Palette.primary),
+            prefixIcon: Padding(
+              padding: const EdgeInsets.only(left: 15, right: 10),
+              child: Icon(prefixIcon, color: Palette.primary),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10.0),
+              borderSide: BorderSide(color: Palette.placeholder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10.0),
+              borderSide: BorderSide(color: Palette.primary, width: 2),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10.0),
+              borderSide: BorderSide(color: Palette.primary),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 15,
+              horizontal: 20,
+            ),
+          ),
+          obscureText: obscureText,
+          onChanged: onChanged,
         ),
-        labelStyle: TextStyle(color: Palette.placeholder),
-        floatingLabelStyle: TextStyle(color: Palette.primary),
-        prefixIcon: Padding(
-          padding: const EdgeInsets.only(left: 15, right: 10),
-          child: Icon(prefixIcon, color: Palette.primary),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10.0),
-          borderSide: BorderSide(color: Palette.placeholder),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10.0),
-          borderSide: BorderSide(color: Palette.primary, width: 2),
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10.0),
-          borderSide: BorderSide(color: Palette.primary),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: 15,
-          horizontal: 20,
-        ),
-      ),
-      obscureText: obscureText,
-      onChanged: onChanged,
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 5, left: 15),
+            child: Text(
+              errorText!,
+              style: const TextStyle(
+                color: Colors.red,
+                fontSize: 12,
+                overflow: TextOverflow.visible,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

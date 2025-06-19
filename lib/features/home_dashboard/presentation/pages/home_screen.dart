@@ -4,12 +4,28 @@ import 'package:biteq/features/home_dashboard/presentation/widgets/chart.dart';
 import 'package:biteq/features/home_dashboard/models/food_item.dart';
 import 'package:biteq/features/home_dashboard/models/chart_data.dart';
 import 'package:biteq/features/home_dashboard/models/food_service.dart';
-import 'package:biteq/features/home_dashboard/presentation/pages/detail_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:biteq/features/home_dashboard/presentation/widgets/time_period_bottom_sheet.dart';
+import 'package:biteq/features/home_dashboard/presentation/widgets/scanned_item_card.dart';
 
 // Riverpod Providers
 final foodServiceProvider = Provider<FoodService>((ref) => FoodService());
+
+final usernameProvider = FutureProvider<String?>((ref) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    DocumentSnapshot userDoc =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+    if (userDoc.exists) {
+      return userDoc.get('name');
+    }
+  }
+  return null;
+});
 
 final foodItemsProvider = FutureProvider<List<FoodItem>>((ref) async {
   final foodService = ref.watch(foodServiceProvider);
@@ -24,7 +40,9 @@ final chartDataProvider = FutureProvider<List<ChartData>>((ref) async {
 });
 
 //calories sum based on period
-final dynamicNutritionProvider = FutureProvider<Map<String, double>>((ref) async {
+final dynamicNutritionProvider = FutureProvider<Map<String, double>>((
+  ref,
+) async {
   final foodService = ref.watch(foodServiceProvider);
   final selectedPeriod = ref.watch(selectedTimePeriodProvider);
 
@@ -38,30 +56,16 @@ final dynamicNutritionProvider = FutureProvider<Map<String, double>>((ref) async
   } else if (selectedPeriod == 'Month') {
     final now = DateTime.now();
     final startOfMonth = DateTime(now.year, now.month, 1);
-    final endOfMonth = DateTime(now.year, now.month + 1, 0);
+    final endOfMonth = DateTime(
+      now.year,
+      now.month + 1,
+      0,
+    ); // Corrected to get last day of current month
     return await foodService.getNutritionForDateRange(startOfMonth, endOfMonth);
   }
 
   return {}; // fallback
 });
-
-
-//fetch username
-Future<String?> getUsername() async {
-  final user = FirebaseAuth.instance.currentUser;
-
-  if (user != null) {
-    DocumentSnapshot userDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .get();
-
-    if (userDoc.exists) {
-      return userDoc.get('name'); // or userDoc['name']
-    }
-  }
-  return null;
-}
 
 // Time period selection provider
 final selectedTimePeriodProvider = StateProvider<String>((ref) => 'Week');
@@ -73,32 +77,20 @@ final displayPeriodLabels = {
   'Month': 'Monthly',
 };
 
-
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final usernameAsync = ref.watch(
+      usernameProvider,
+    ); // Watch the new username provider
     final foodItemsAsync = ref.watch(foodItemsProvider);
     final chartDataAsync = ref.watch(chartDataProvider);
     final nutritionAsync = ref.watch(dynamicNutritionProvider);
     final selectedTimePeriod = ref.watch(selectedTimePeriodProvider);
-    final displayLabel = displayPeriodLabels[selectedTimePeriod] ?? selectedTimePeriod;
-
-    return FutureBuilder<String?>(
-      future: getUsername(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            backgroundColor: Color(0xFFF5F3F7),
-            body: Center(child: CircularProgressIndicator()),
-          );
-        } else if (snapshot.hasError || !snapshot.hasData) {
-          return const Scaffold(
-            backgroundColor: Color(0xFFF5F3F7),
-            body: Center(child: Text("Failed to load username")),
-          );
-        }
+    final displayLabel =
+        displayPeriodLabels[selectedTimePeriod] ?? selectedTimePeriod;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F3F7),
@@ -106,25 +98,47 @@ class HomeScreen extends ConsumerWidget {
         backgroundColor: const Color(0xFFF5F3F7),
         elevation: 0,
         automaticallyImplyLeading: false,
-        title: Text(
-          "Hello, ${snapshot.data}!",
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+        title: usernameAsync.when(
+          // Use when to handle AsyncValue states for username
+          data:
+              (username) => Text(
+                "Hello, ${username ?? 'User'}!", // Provide a fallback for username
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+          loading:
+              () => const Text(
+                "Hello, Loading...",
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+          error:
+              (error, stack) => const Text(
+                "Hello, Error!",
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
         ),
       ),
       body: RefreshIndicator(
-        // Added RefreshIndicator here for pull-to-refresh
         color: Colors.blue,
         onRefresh: () async {
-          // Refresh all the data providers
+          // Refresh only the data that is likely to change frequently
+          // Username is typically static, so we don't invalidate it here
           ref.invalidate(foodItemsProvider);
           ref.invalidate(chartDataProvider);
           ref.invalidate(dynamicNutritionProvider);
-          
-          // Wait for all providers to complete their refresh
+
+          // Wait for these providers to complete their refresh
           await Future.wait([
             ref.read(foodItemsProvider.future),
             ref.read(chartDataProvider.future),
@@ -132,6 +146,7 @@ class HomeScreen extends ConsumerWidget {
           ]);
         },
         child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Padding(
             padding: const EdgeInsets.all(20.0),
             child: Column(
@@ -150,9 +165,16 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () => _showTimePeriodBottomSheet(context, ref),
+                      onTap:
+                          () => showTimePeriodBottomSheet(
+                            context,
+                            ref,
+                          ), // Use the extracted function
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
@@ -168,10 +190,17 @@ class HomeScreen extends ConsumerWidget {
                           children: [
                             Text(
                               selectedTimePeriod,
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                             const SizedBox(width: 4),
-                            Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.grey[600]),
+                            Icon(
+                              Icons.keyboard_arrow_down,
+                              size: 16,
+                              color: Colors.grey[600],
+                            ),
                           ],
                         ),
                       ),
@@ -182,29 +211,28 @@ class HomeScreen extends ConsumerWidget {
 
                 // Calories Overview
                 nutritionAsync.when(
-                    data: (nutrition) => Row(
-                      children: [
-                        Text(
-                          '${nutrition['calories']?.toInt() ?? 0}',
-
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
+                  data:
+                      (nutrition) => Row(
+                        children: [
+                          Text(
+                            '${nutrition['calories']?.toInt() ?? 0}',
+                            style: const TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '$displayLabel Calories',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$displayLabel Calories',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black54,
-                        ),
-                      ),
-
-                    ],
-                  ),
                   loading: () => const CircularProgressIndicator(),
                   error: (error, stack) => Text('Error: $error'),
                 ),
@@ -213,20 +241,19 @@ class HomeScreen extends ConsumerWidget {
                 // Date Range
                 Text(
                   _getDateRangeText(selectedTimePeriod),
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 24),
 
                 // Dynamic Chart - Now uses the new widget
                 chartDataAsync.when(
-                  data: (chartData) => CalorieBarChart(
-                    chartData: chartData,
-                    selectedTimePeriod: selectedTimePeriod,
-                  ),
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  data:
+                      (chartData) => CalorieBarChart(
+                        chartData: chartData,
+                        selectedTimePeriod: selectedTimePeriod,
+                      ),
+                  loading:
+                      () => const Center(child: CircularProgressIndicator()),
                   error: (error, stack) => Center(child: Text('Error: $error')),
                 ),
                 const SizedBox(height: 32),
@@ -257,11 +284,14 @@ class HomeScreen extends ConsumerWidget {
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: latestThree.length,
                       itemBuilder: (context, index) {
-                        return _ScannedItem(foodItem: latestThree[index]);
+                        return ScannedItemCard(
+                          foodItem: latestThree[index],
+                        ); // Use the extracted widget
                       },
                     );
                   },
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading:
+                      () => const Center(child: CircularProgressIndicator()),
                   error: (error, stack) => Center(child: Text('Error: $error')),
                 ),
               ],
@@ -270,65 +300,7 @@ class HomeScreen extends ConsumerWidget {
         ),
       ),
     );
-      },
-    );
   }
-
-void _showTimePeriodBottomSheet(BuildContext context, WidgetRef ref) {
-  final currentValue = ref.read(selectedTimePeriodProvider);
-
-  showModalBottomSheet(
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
-    backgroundColor: Colors.transparent,
-    builder: (context) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          String selectedValue = currentValue;
-
-          return Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                unselectedWidgetColor: Colors.white,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: ['Day', 'Week', 'Month'].map((period) {
-                  return RadioListTile<String>(
-                    title: Text(
-                      period,
-                      style: const TextStyle(color: Colors.black),
-                    ),
-                    value: period,
-                    groupValue: selectedValue,
-                    activeColor: Colors.blue,
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => selectedValue = value);
-                        ref.read(selectedTimePeriodProvider.notifier).state = value;
-                        Navigator.pop(context);
-                      }
-                    },
-                  );
-                }).toList(),
-              ),
-            ),
-          );
-        },
-      );
-    },
-  );
-}
-
-
-
 
   String _getDateRangeText(String timePeriod) {
     final now = DateTime.now();
@@ -360,100 +332,19 @@ void _showTimePeriodBottomSheet(BuildContext context, WidgetRef ref) {
 
   String _getMonthName(int month) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return months[month - 1];
-  }
-}
-
-class _ScannedItem extends StatelessWidget {
-  final FoodItem foodItem;
-
-  const _ScannedItem({
-    required this.foodItem,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DetailPage(foodItem: foodItem),
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 6,
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                foodItem.imagePath,
-                width: 60,
-                height: 60,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Icon(
-                  Icons.broken_image,
-                  size: 60,
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    foodItem.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${foodItem.calories} cal • ${foodItem.protein}g protein',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${foodItem.dateScanned.hour}:${foodItem.dateScanned.minute.toString().padLeft(2, '0')}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: Colors.grey[400],
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
