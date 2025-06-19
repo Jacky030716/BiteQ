@@ -6,30 +6,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:biteq/features/auth/presentation/providers/auth_state_provider.dart'; // adjust as needed
-import 'post_model.dart'; // Assuming Post model is here
+import 'package:biteq/features/auth/presentation/providers/auth_state_provider.dart';
+import 'post_model.dart';
 
-// A simple model for user data relevant to posts
 class PostCurrentUser {
   final String? id;
-  final String name; // Name will have a default fallback
+  final String name;
 
   PostCurrentUser({required this.id, required this.name});
 }
 
-// Provider for the current user's ID and Name for posting interactions
-// This will correctly handle loading states and provide a fallback name
 final postCurrentUserProvider = FutureProvider<PostCurrentUser>((ref) async {
-  final authState = await ref.watch(
-    authStateProvider.future,
-  ); // Await the FutureProvider
+  final authState = await ref.watch(authStateProvider.future);
 
   if (authState != null) {
-    // User is logged in
     final userName = authState.name.isNotEmpty ? authState.name : 'User';
     return PostCurrentUser(id: authState.id, name: userName);
   } else {
-    // User is not logged in
     return PostCurrentUser(id: null, name: 'Guest User');
   }
 });
@@ -45,41 +38,44 @@ class PostDetailPage extends ConsumerStatefulWidget {
 
 class _PostDetailPageState extends ConsumerState<PostDetailPage> {
   late int _likes;
-  late bool _isLiked;
+  bool _isLiked = false; // Initialize _isLiked to false directly
+
   final TextEditingController _commentController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _likes = widget.post.likes;
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
     _checkLikeStatus();
   }
 
   Future<void> _checkLikeStatus() async {
-    final currentUserData =
-        ref.read(postCurrentUserProvider).value; // Get current value
+    final currentUserData = ref.read(postCurrentUserProvider).value;
     final userId = currentUserData?.id;
 
     if (userId != null &&
         widget.post.id != null &&
         widget.post.id!.isNotEmpty) {
-      final likeDoc =
-          await FirebaseFirestore.instance
-              .collection('posts')
-              .doc(widget.post.id)
-              .collection('likes')
-              .doc(userId)
-              .get();
+      try {
+        final likeDoc =
+            await FirebaseFirestore.instance
+                .collection('posts')
+                .doc(widget.post.id)
+                .collection('likes')
+                .doc(userId)
+                .get();
 
-      if (mounted) {
-        setState(() {
-          _isLiked = likeDoc.exists;
-        });
+        if (mounted) {
+          setState(() {
+            _isLiked = likeDoc.exists;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isLiked = false; // Default to false on error
+          });
+        }
       }
     } else {
       if (mounted) {
@@ -247,7 +243,6 @@ class _PostDetailPageState extends ConsumerState<PostDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch the current user data provider
     final currentUserAsyncValue = ref.watch(postCurrentUserProvider);
 
     return Scaffold(
