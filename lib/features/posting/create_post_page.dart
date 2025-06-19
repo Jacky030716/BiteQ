@@ -1,5 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'post_controller.dart';
 import 'post_model.dart';
 
 class CreatePostPage extends StatefulWidget {
@@ -16,22 +16,31 @@ class _CreatePostPageState extends State<CreatePostPage> {
   final _authorController = TextEditingController();
   final _descriptionController = TextEditingController();
 
-  void _submit() {
+  void _submit() async {
     if (_formKey.currentState!.validate()) {
-      // You would dispatch to a provider or controller here
-      print("Post Created:");
-      print(_titleController.text);
-      print(_imageUrlController.text);
-      print(_authorController.text);
-      print(_descriptionController.text);
-      Navigator.pop(context); // Go back to explore
+      final newPost = Post(
+        title: _titleController.text,
+        imageUrl: _imageUrlController.text,
+        author: _authorController.text,
+        description: _descriptionController.text,
+        likes: 0, // ✅ Add default initial value
+      );
+
+      await FirebaseFirestore.instance
+          .collection('posts')
+          .add(newPost.toMap());
+
+      if (mounted) Navigator.pop(context);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Post')),
+      appBar: AppBar(
+        title: const Text('Create Post'),
+        backgroundColor: Colors.blue.shade300,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -62,7 +71,14 @@ class _CreatePostPageState extends State<CreatePostPage> {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _submit,
-                child: const Text('Create Post'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade400,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Create Post', style: TextStyle(fontSize: 16)),
               ),
             ],
           ),
