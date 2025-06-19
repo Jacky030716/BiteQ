@@ -14,10 +14,7 @@ class ExplorePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'Explore',
-          style: TextStyle(
-            color: Colors.black87,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
@@ -36,19 +33,20 @@ class ExplorePage extends StatelessWidget {
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('posts')
-            .orderBy('timestamp', descending: true)
-            .snapshots(),
+        stream:
+            FirebaseFirestore.instance
+                .collection('posts')
+                .orderBy('timestamp', descending: true)
+                .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
-         final posts = snapshot.data!.docs.map((doc) {
-            return Post.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-          }).toList();
-
+          final posts =
+              snapshot.data!.docs.map((doc) {
+                return Post.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+              }).toList();
 
           if (posts.isEmpty) {
             return const Center(child: Text('No posts yet.'));
@@ -98,7 +96,10 @@ class ExplorePage extends StatelessWidget {
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -115,7 +116,11 @@ class ExplorePage extends StatelessWidget {
                               const SizedBox(height: 6),
                               Row(
                                 children: [
-                                  const Icon(Icons.person, size: 14, color: Colors.grey),
+                                  const Icon(
+                                    Icons.person,
+                                    size: 14,
+                                    color: Colors.grey,
+                                  ),
                                   const SizedBox(width: 4),
                                   Expanded(
                                     child: Text(
@@ -131,7 +136,11 @@ class ExplorePage extends StatelessWidget {
                               const SizedBox(height: 6),
                               Row(
                                 children: [
-                                  const Icon(Icons.favorite, size: 16, color: Colors.red),
+                                  const Icon(
+                                    Icons.favorite,
+                                    size: 16,
+                                    color: Colors.red,
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     '${post.likes}',

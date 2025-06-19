@@ -1,5 +1,5 @@
 class Post {
-  final String? id; // ✅ Now optional
+  final String? id;
   final String title;
   final String imageUrl;
   final String author;
@@ -7,7 +7,7 @@ class Post {
   final int likes;
 
   Post({
-    this.id, // ✅ Default: null
+    this.id,
     required this.title,
     required this.imageUrl,
     required this.author,
@@ -17,7 +17,7 @@ class Post {
 
   factory Post.fromMap(Map<String, dynamic> data, String docId) {
     return Post(
-      id: docId, // ✅ Assigned from Firestore
+      id: docId,
       title: data['title'] ?? '',
       imageUrl: data['imageUrl'] ?? '',
       author: data['author'] ?? '',
@@ -33,7 +33,6 @@ class Post {
       'author': author,
       'description': description,
       'likes': likes,
-      // ⚠️ No need to include id here, it's stored in Firestore doc ID
     };
   }
 }
