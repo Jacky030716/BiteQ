@@ -224,7 +224,7 @@ class MealItem extends ConsumerWidget {
                 onEditFood: onEditFood,
                 onDeleteFood: onDeleteFood,
               );
-            }).toList(),
+            }),
 
           // Add more food button
           _buildAddFoodButton(context),

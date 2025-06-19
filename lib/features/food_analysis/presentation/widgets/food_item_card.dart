@@ -75,9 +75,9 @@ class FoodItemCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10.5),
         child:
-            food.image != null && food.image!.isNotEmpty
+            food.image.isNotEmpty
                 ? Image.network(
-                  food.image!,
+                  food.image,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return _buildFoodPlaceholder();

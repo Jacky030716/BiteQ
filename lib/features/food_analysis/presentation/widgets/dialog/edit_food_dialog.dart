@@ -227,7 +227,7 @@ class _EditFoodDialogState extends State<EditFoodDialog> {
       if (nameResponse?.content?.parts?.isNotEmpty == true) {
         final part = nameResponse!.content!.parts!.first;
         if (part is TextPart) {
-          foodName = part.text?.trim();
+          foodName = part.text.trim();
         }
       }
 

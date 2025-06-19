@@ -2,7 +2,7 @@ import 'package:biteq/features/food_analysis/presentation/viewmodels/meal_view_m
 import 'package:biteq/features/food_analysis/presentation/widgets/donut_macro.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:biteq/features/profile/viewmodels/user_profile_view_model.dart'; // Import the new provider
+// Import the new provider
 
 class MealSummary extends ConsumerWidget {
   const MealSummary({super.key});

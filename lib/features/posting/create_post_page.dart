@@ -1,42 +1,45 @@
 import 'package:flutter/material.dart';
-import 'post_controller.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'post_model.dart';
+import 'post_controller.dart';
+import 'package:biteq/features/posting/providers/post_providers.dart';
 
-class CreatePostPage extends StatefulWidget {
-  final PostController postController;
-  const CreatePostPage({super.key, required this.postController});
+class CreatePostPage extends ConsumerStatefulWidget {
+  const CreatePostPage({super.key});
 
   @override
-  State<CreatePostPage> createState() => _CreatePostPageState();
+  ConsumerState<CreatePostPage> createState() => _CreatePostPageState();
 }
 
-class _CreatePostPageState extends State<CreatePostPage> {
+class _CreatePostPageState extends ConsumerState<CreatePostPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _imageUrlController = TextEditingController();
-  final _authorController = TextEditingController();
   final _descriptionController = TextEditingController();
-
-  void _submit() {
-    if (_formKey.currentState!.validate()) {
-      final newPost = Post(
-        title: _titleController.text,
-        imageUrl: _imageUrlController.text,
-        author: _authorController.text,
-        description: _descriptionController.text,
-      );
-      widget.postController.addPost(newPost);
-      Navigator.pop(context);
-    }
-  }
 
   @override
   void dispose() {
     _titleController.dispose();
     _imageUrlController.dispose();
-    _authorController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  void _submit() {
+    if (_formKey.currentState!.validate()) {
+      final newPost = Post(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: _titleController.text,
+        imageUrl: _imageUrlController.text,
+        author: 'Current User', // Replace with actual user from auth
+        authorId: 'currentUserId', // Replace with actual user ID
+        description: _descriptionController.text,
+      );
+
+      ref.read(postControllerProvider.notifier).addPost(newPost);
+      if (mounted) context.pop();
+    }
   }
 
   @override
@@ -52,11 +55,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Title'),
-                validator: (val) => val!.isEmpty ? 'Required' : null,
-              ),
-              TextFormField(
-                controller: _authorController,
-                decoration: const InputDecoration(labelText: 'Author'),
                 validator: (val) => val!.isEmpty ? 'Required' : null,
               ),
               TextFormField(

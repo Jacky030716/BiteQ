@@ -208,7 +208,7 @@ class SurveyViewModel extends StateNotifier<SurveyState> {
     if (currentQuestion['type'] == 'options') {
       if (response != null) {
         final options = currentQuestion['options'] as List<String>;
-        final int? restoredIndex = options.indexOf(response);
+        final int restoredIndex = options.indexOf(response);
         state = state.copyWith(
           selectedOption: restoredIndex != -1 ? restoredIndex : null,
         );

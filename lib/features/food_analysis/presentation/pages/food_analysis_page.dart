@@ -52,7 +52,7 @@ class _FoodAnalysisPageState extends ConsumerState<FoodAnalysisPage> {
                 // Show content based on meal state
                 mealState.when(
                   loading:
-                      () => Container(
+                      () => SizedBox(
                         height: 200,
                         child: Center(
                           child: CircularProgressIndicator(

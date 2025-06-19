@@ -220,7 +220,7 @@ class MealRepository {
     } on FirebaseException catch (e) {
       throw _handleFirebaseException(e);
     } catch (e) {
-      print('Error deleting meal ${mealName} for date $dateId: $e');
+      print('Error deleting meal $mealName for date $dateId: $e');
       throw Exception('Failed to delete meal: $e');
     }
   }

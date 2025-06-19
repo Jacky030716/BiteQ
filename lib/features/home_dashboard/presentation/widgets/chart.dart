@@ -1,6 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:biteq/features/home_dashboard/presentation/pages/home_screen.dart'; // Import the file where ChartData is defined
+// Import the file where ChartData is defined
 import 'package:biteq/features/home_dashboard/models/chart_data.dart';
 
 class CalorieBarChart extends StatelessWidget {
@@ -46,8 +46,12 @@ class CalorieBarChart extends StatelessWidget {
           ),
           titlesData: FlTitlesData(
             show: true,
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
@@ -66,12 +70,15 @@ class CalorieBarChart extends StatelessWidget {
                     // Only show specific day labels to avoid clutter
                     if (value.toInt() == 0 ||
                         (value.toInt() + 1) % 5 == 0 || // Every 5th day
-                        (value.toInt() + 1) == chartData.length // Last day
-                    ) {
+                        (value.toInt() + 1) ==
+                            chartData
+                                .length // Last day
+                                ) {
                       return Padding(
                         padding: const EdgeInsets.only(top: 8.0),
                         child: Text(
-                          (value.toInt() + 1).toString(), // +1 because index is 0-based
+                          (value.toInt() + 1)
+                              .toString(), // +1 because index is 0-based
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 10, // Smaller font for more labels
@@ -100,41 +107,42 @@ class CalorieBarChart extends StatelessWidget {
             ),
           ),
           borderData: FlBorderData(show: false),
-          barGroups: chartData.asMap().entries.map((entry) {
-            int index = entry.key;
-            ChartData data = entry.value;
+          barGroups:
+              chartData.asMap().entries.map((entry) {
+                int index = entry.key;
+                ChartData data = entry.value;
 
-            return BarChartGroupData(
-              x: index,
-              barRods: [
-                BarChartRodData(
-                  toY: data.calories,
-                  color: const Color.fromARGB(255, 45, 152, 229),
-                  width: _getBarWidth(selectedTimePeriod, chartData.length),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(4),
-                    topRight: Radius.circular(4),
-                  ),
-                ),
-              ],
-            );
-          }).toList(),
+                return BarChartGroupData(
+                  x: index,
+                  barRods: [
+                    BarChartRodData(
+                      toY: data.calories,
+                      color: const Color.fromARGB(255, 45, 152, 229),
+                      width: _getBarWidth(selectedTimePeriod, chartData.length),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(4),
+                        topRight: Radius.circular(4),
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
         ),
       ),
     );
   }
 
   double _getDynamicMaxY(List<ChartData> data, String timePeriod) {
-  if (data.isEmpty) return 1000;
+    if (data.isEmpty) return 1000;
 
-  double maxCalories = data.map((e) => e.calories).reduce((a, b) => a > b ? a : b).toDouble();
+    double maxCalories =
+        data.map((e) => e.calories).reduce((a, b) => a > b ? a : b).toDouble();
 
-  double interval = _getGridInterval(timePeriod);
+    double interval = _getGridInterval(timePeriod);
 
-  // Round up to nearest interval (e.g., 100, 500, etc.)
-  return (maxCalories / interval).ceil() * interval;
-}
-
+    // Round up to nearest interval (e.g., 100, 500, etc.)
+    return (maxCalories / interval).ceil() * interval;
+  }
 
   double _getGridInterval(String timePeriod) {
     switch (timePeriod) {
@@ -169,5 +177,4 @@ class CalorieBarChart extends StatelessWidget {
     if (value >= 1000) return '${(value / 1000).toStringAsFixed(1)}k';
     return value.toInt().toString();
   }
-  
 }
