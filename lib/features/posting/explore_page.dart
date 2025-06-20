@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'post_model.dart';
 import 'create_post_page.dart';
 import 'post_detail_page.dart';
@@ -10,13 +11,13 @@ class ExplorePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFE), // Very light blue background
+      backgroundColor: const Color(0xFFF8FAFE),
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: const Text(
           'Explore',
           style: TextStyle(
-            color: Color(0xFF1A1A1A), 
+            color: Color(0xFF1A1A1A),
             fontWeight: FontWeight.w700,
             fontSize: 20,
           ),
@@ -77,12 +78,16 @@ class ExplorePage extends StatelessWidget {
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('posts')
-            .orderBy('timestamp', descending: true)
-            .snapshots(),
+        stream:
+            FirebaseFirestore.instance
+                .collection('posts')
+                .orderBy(
+                  'timestamp',
+                  descending: true,
+                ) // Ensure timestamp exists on all posts
+                .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2196F3)),
@@ -91,9 +96,19 @@ class ExplorePage extends StatelessWidget {
             );
           }
 
-          final posts = snapshot.data!.docs.map((doc) {
-            return Post.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-          }).toList();
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Error loading posts: ${snapshot.error}',
+                style: TextStyle(color: Colors.red),
+              ),
+            );
+          }
+
+          final posts =
+              snapshot.data!.docs.map((doc) {
+                return Post.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+              }).toList();
 
           if (posts.isEmpty) {
             return Center(
@@ -125,35 +140,25 @@ class ExplorePage extends StatelessWidget {
                   const SizedBox(height: 8),
                   const Text(
                     'Be the first to share something amazing!',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF757575),
-                    ),
+                    style: TextStyle(fontSize: 14, color: Color(0xFF757575)),
                   ),
                 ],
               ),
             );
           }
 
-          return CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.all(16),
-                sliver: SliverMasonryGrid.count(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  itemBuilder: (context, index) {
-                    final post = posts[index];
-                    return _buildPostCard(context, post);
-                  },
-                  childCount: posts.length,
-                ),
-              ),
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 80), // Bottom padding
-              ),
-            ],
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: MasonryGridView.count(
+              crossAxisCount: 2, // Number of columns
+              mainAxisSpacing: 12, // Spacing between items vertically
+              crossAxisSpacing: 12, // Spacing between items horizontally
+              itemCount: posts.length,
+              itemBuilder: (context, index) {
+                final post = posts[index];
+                return _buildPostCard(context, post);
+              },
+            ),
           );
         },
       ),
@@ -162,15 +167,15 @@ class ExplorePage extends StatelessWidget {
 
   Widget _buildPostCard(BuildContext context, Post post) {
     final tags = post.targetUsers ?? [];
-    final displayTitle = post.foodName?.isNotEmpty == true ? post.foodName! : post.title;
-    
+    // Prioritize foodName if available, otherwise fall back to title
+    final displayTitle =
+        post.foodName?.isNotEmpty == true ? post.foodName! : post.title;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => PostDetailPage(post: post),
-          ),
+          MaterialPageRoute(builder: (_) => PostDetailPage(post: post)),
         );
       },
       child: Container(
@@ -192,49 +197,51 @@ class ExplorePage extends StatelessWidget {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min, // Ensures column takes minimum space
           children: [
-            // Image Section
+            // Image Section - Removed AspectRatio for dynamic height
             ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
               ),
-              child: AspectRatio(
-                aspectRatio: 1.0, // Square aspect ratio like RedNote
-                child: Image.network(
-                  post.imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFFE3F2FD),
-                          const Color(0xFFBBDEFB),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+              child: Image.network(
+                post.imageUrl,
+                width: double.infinity, // Image takes full width of its parent
+                fit: BoxFit.cover, // Covers the available space, might crop
+                // You can add height: something if you want a minimum height
+                // but for true staggered layout, it's best to let it size naturally.
+                errorBuilder:
+                    (_, __, ___) => Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFFE3F2FD),
+                            const Color(0xFFBBDEFB),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      height: 150, // Provide a fallback height for error images
+                      child: const Center(
+                        child: Icon(
+                          Icons.image_outlined,
+                          size: 40,
+                          color: Color(0xFF90CAF9),
+                        ),
                       ),
                     ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.image_outlined,
-                        size: 40,
-                        color: Color(0xFF90CAF9),
-                      ),
-                    ),
-                  ),
-                ),
               ),
             ),
-            
+
             // Content Section
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+                mainAxisSize:
+                    MainAxisSize.min, // Ensures column takes minimum space
                 children: [
                   // Title
                   Text(
@@ -248,9 +255,9 @@ class ExplorePage extends StatelessWidget {
                       height: 1.3,
                     ),
                   ),
-                  
+
                   const SizedBox(height: 8),
-                  
+
                   // Author
                   Row(
                     children: [
@@ -282,7 +289,7 @@ class ExplorePage extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
+
                   // Tags
                   if (tags.isNotEmpty) ...[
                     const SizedBox(height: 8),
@@ -291,18 +298,22 @@ class ExplorePage extends StatelessWidget {
                       runSpacing: 4,
                       children: [
                         ...tags.take(3).map((tag) => _buildTag(tag, false)),
-                        if (tags.length > 3) _buildTag('+${tags.length - 3}', true),
+                        if (tags.length > 3)
+                          _buildTag('+${tags.length - 3}', true),
                       ],
                     ),
                   ],
-                  
+
                   const SizedBox(height: 8),
-                  
+
                   // Likes
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF3F3),
                           borderRadius: BorderRadius.circular(12),
@@ -360,59 +371,6 @@ class ExplorePage extends StatelessWidget {
           fontWeight: FontWeight.w500,
           color: isMore ? const Color(0xFF0288D1) : const Color(0xFF8E24AA),
         ),
-      ),
-    );
-  }
-}
-
-// Custom Masonry Grid Implementation
-class SliverMasonryGrid extends StatelessWidget {
-  final int crossAxisCount;
-  final double mainAxisSpacing;
-  final double crossAxisSpacing;
-  final Widget Function(BuildContext, int) itemBuilder;
-  final int childCount;
-
-  const SliverMasonryGrid.count({
-    super.key,
-    required this.crossAxisCount,
-    required this.mainAxisSpacing,
-    required this.crossAxisSpacing,
-    required this.itemBuilder,
-    required this.childCount,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          if (index % crossAxisCount == 0) {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: List.generate(
-                crossAxisCount,
-                (colIndex) {
-                  final itemIndex = index + colIndex;
-                  if (itemIndex >= childCount) {
-                    return Expanded(child: Container());
-                  }
-                  return Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        right: colIndex == crossAxisCount - 1 ? 0 : crossAxisSpacing,
-                        bottom: mainAxisSpacing,
-                      ),
-                      child: itemBuilder(context, itemIndex),
-                    ),
-                  );
-                },
-              ),
-            );
-          }
-          return Container();
-        },
-        childCount: (childCount / crossAxisCount).ceil(),
       ),
     );
   }
