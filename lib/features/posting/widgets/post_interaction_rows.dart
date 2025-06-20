@@ -4,7 +4,6 @@ class PostInteractionsRow extends StatelessWidget {
   final int likes;
   final bool isLiked;
   final VoidCallback onToggleLike;
-  final VoidCallback onSharePost;
   final Future<String> Function() getLikeSummary;
 
   const PostInteractionsRow({
@@ -12,7 +11,6 @@ class PostInteractionsRow extends StatelessWidget {
     required this.likes,
     required this.isLiked,
     required this.onToggleLike,
-    required this.onSharePost,
     required this.getLikeSummary,
   });
 
@@ -36,7 +34,6 @@ class PostInteractionsRow extends StatelessWidget {
             const SizedBox(width: 6),
             const Text("Comments"),
             const Spacer(),
-            IconButton(icon: const Icon(Icons.share), onPressed: onSharePost),
           ],
         ),
         const SizedBox(height: 8),
