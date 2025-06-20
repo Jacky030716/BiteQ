@@ -338,6 +338,7 @@ class _ImagePickerPageState extends State<ImagePickerPage> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text(
           'AI Food Analysis',
           style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
