@@ -12,6 +12,7 @@ class ExplorePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text(
           'Explore',
           style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),

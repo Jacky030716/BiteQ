@@ -64,6 +64,7 @@ class UserProfileScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.grey.shade50, // Consistent background color
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text(
           'Profile',
           style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
