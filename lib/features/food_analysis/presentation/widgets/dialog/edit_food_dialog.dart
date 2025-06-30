@@ -108,7 +108,6 @@ class _EditFoodDialogState extends State<EditFoodDialog> {
       }
       return TimeOfDay(hour: hour, minute: minute);
     } catch (e) {
-      print("Error parsing time string: $e");
       return TimeOfDay.now();
     }
   }
@@ -163,8 +162,6 @@ class _EditFoodDialogState extends State<EditFoodDialog> {
       }
 
       if (responseText != null && responseText.isNotEmpty) {
-        print('Gemini Response Text: $responseText');
-
         // Extract food name from a more detailed analysis (optional, runs concurrently or after)
         await _extractFoodName(imageFile);
 
@@ -199,7 +196,6 @@ class _EditFoodDialogState extends State<EditFoodDialog> {
       }
     } catch (e) {
       _showSnackBar("Error analyzing image: ${e.toString()}", isError: true);
-      print('Error analyzing image with Gemini: $e');
     } finally {
       setState(() {
         _isProcessingImage = false; // End loading for image analysis
@@ -240,7 +236,6 @@ class _EditFoodDialogState extends State<EditFoodDialog> {
         });
       }
     } catch (e) {
-      print('Error extracting food name: $e');
       // Don't show a snackbar for this, as it's an optional enhancement
     }
   }
@@ -521,9 +516,6 @@ class _EditFoodDialogState extends State<EditFoodDialog> {
                                     'Failed to update food: $e',
                                     isError: true,
                                   );
-                                  print(
-                                    'Error saving food item: $e',
-                                  ); // Log detailed error
                                 } finally {
                                   if (mounted) {
                                     setState(() {

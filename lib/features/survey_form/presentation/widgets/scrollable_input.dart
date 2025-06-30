@@ -47,6 +47,13 @@ class _SurveyScrollableInputState extends State<SurveyScrollableInput> {
             ? widget.defaultValue!
             : widget.minValue;
 
+    // FIX: Set the input controller text to the selected value
+    // This ensures the ViewModel knows about the default value
+    if (widget.inputController.text.isEmpty ||
+        int.tryParse(widget.inputController.text) != selectedValue) {
+      widget.inputController.text = selectedValue.toString();
+    }
+
     final initialIndex = selectedValue - widget.minValue;
     scrollController = FixedExtentScrollController(initialItem: initialIndex);
   }

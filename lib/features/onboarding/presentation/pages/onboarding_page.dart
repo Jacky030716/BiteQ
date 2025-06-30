@@ -71,6 +71,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Image.asset('assets/images/logo.png', height: 24),
                 SizedBox(width: 4),
@@ -84,7 +85,6 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 ),
               ],
             ),
-            Text('BM|BI', style: TextStyle(fontSize: 14)),
           ],
         ),
       ),

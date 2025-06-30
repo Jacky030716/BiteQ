@@ -23,26 +23,6 @@ class _ImagePickerPageState extends State<ImagePickerPage> {
   bool _isSaving = false;
   FoodAnalysisReport? _analysisReport;
 
-  final Map<String, String> _foodDescriptions = {
-    'chicken rice':
-        'A popular Hainanese dish featuring poached chicken and seasoned rice.',
-    'burger':
-        'A sandwich consisting of a cooked patty of ground meat usually placed inside a sliced bun.',
-    'pizza':
-        'A savory dish of Italian origin consisting of a usually round, flattened base of leavened wheat-based dough topped with tomatoes, cheese, and various other ingredients.',
-    'apple': 'A round fruit with crisp flesh and green or red skin.',
-    'sandwich':
-        'Two or more slices of bread or a split roll with a filling in between.',
-    'salad':
-        'A dish consisting of mixed pieces of food, sometimes with at least one raw ingredient, usually served with a dressing.',
-    'soup':
-        'A liquid food, generally served warm or hot, that is made by combining ingredients such as meat or vegetables with stock, juice, water, or another liquid.',
-    'pasta':
-        'A staple food of traditional Italian cuisine, made from unleavened dough of wheat flour mixed with water or eggs, and formed into sheets or various shapes, then cooked by boiling or baking.',
-    'nasi lemak':
-        'A fragrant rice dish cooked in coconut milk and pandan leaf, commonly found in Malaysia.',
-  };
-
   double _parseNutrientValue(String? value) {
     if (value == null || value.isEmpty) return 0.0;
     return double.tryParse(value.trim()) ?? 0.0;
@@ -113,7 +93,6 @@ class _ImagePickerPageState extends State<ImagePickerPage> {
       final uploadTask = await storageRef.putFile(imageFile);
       return await uploadTask.ref.getDownloadURL();
     } catch (e) {
-      print('Error uploading image: $e');
       return null;
     }
   }
@@ -304,25 +283,60 @@ class _ImagePickerPageState extends State<ImagePickerPage> {
         mealIcon = 'assets/icons/snack.png';
       }
 
-      // Structure matching your Firestore format
+      final mealDocRef = firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('meals_by_date')
+          .doc(dateStr)
+          .collection('mealTypes')
+          .doc(mealType);
+
+      // Get existing meal document
+      final existingMealDoc = await mealDocRef.get();
+
+      List<Map<String, dynamic>> existingFoods = [];
+      double totalCalories = updatedReport.calories;
+
+      if (existingMealDoc.exists) {
+        // If meal type already exists, get existing foods and calculate total calories
+        final existingData = existingMealDoc.data() as Map<String, dynamic>;
+
+        if (existingData['foods'] != null) {
+          existingFoods = List<Map<String, dynamic>>.from(
+            existingData['foods'],
+          );
+
+          // Calculate total calories from existing foods
+          for (var food in existingFoods) {
+            if (food['calories'] != null) {
+              // Handle both String and num types for calories
+              var caloriesValue = food['calories'];
+              if (caloriesValue is String) {
+                totalCalories += double.tryParse(caloriesValue) ?? 0.0;
+              } else if (caloriesValue is num) {
+                totalCalories += caloriesValue.toDouble();
+              }
+            }
+          }
+        }
+      }
+
+      // Add new food to existing foods array
+      existingFoods.add(updatedReport.toFirestoreMap());
+
+      // Structure with updated foods array and total calories
       final mealData = {
         'date': dateStr,
-        'foods': [updatedReport.toFirestoreMap()],
+        'foods': existingFoods,
         'id': mealType,
         'mealIcon': mealIcon,
         'name': mealType,
         'time': updatedReport.formatTime(now),
-        'totalCals': '${updatedReport.calories.toInt()} Cals',
+        'totalCals': '${totalCalories.toString()} Cals',
       };
 
-      await firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('meals_by_date')
-          .doc((dateStr))
-          .collection('mealTypes')
-          .doc(mealType)
-          .set(mealData, SetOptions(merge: true));
+      // Save the updated meal data
+      await mealDocRef.set(mealData, SetOptions(merge: true));
 
       _showSnackBar('Food analysis saved to $mealType!');
       _resetPage();

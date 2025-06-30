@@ -218,7 +218,23 @@ class SurveyViewModel extends StateNotifier<SurveyState> {
       }
     } else if (currentQuestion['type'] == 'input' ||
         currentQuestion['type'] == 'scrollable_input') {
-      inputController.text = response?.toString() ?? '';
+      if (response != null) {
+        // If there's a stored response, use it
+        inputController.text = response.toString();
+      } else if (currentQuestion['type'] == 'scrollable_input') {
+        // FIX: For scrollable inputs without stored response, use default value
+        final defaultValue = currentQuestion['defaultValue'];
+        if (defaultValue != null) {
+          inputController.text = defaultValue.toString();
+          // Also update the response immediately
+          _updateResponse(defaultValue);
+        } else {
+          inputController.text = '';
+        }
+      } else {
+        // For regular input, clear the text
+        inputController.text = '';
+      }
     }
   }
 
